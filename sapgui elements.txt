@@ -1,0 +1,44 @@
+(No Title)
+class: WindowsFormsSapFocus
+
+This is the square over the currently selected SAP control.
+There are four of these elements with a width and height of 6.
+These elements go CCW starting from the bottom left corner.
+
+
+(No title)
+class: SysShadow
+
+tints UI elements darker (i.e. hovering over a button)
+
+
+(No Title)
+class: tooltips_class32
+
+tooltips
+
+
+(No title)
+class: Afx:0F480000:0:00010005:00000000:944C0485 (varies per window)
+
+These are the "squares" around each SAPGUI window which gives it it's unusual border.
+two pieces are wide and short, two pieces are tall and narrow. (i.e. sides of a rectangle)
+These pieces also go around the SAP Logon window
+
+
+
+
+Title: <actual window title; i.e. SQL Command Editor>
+class: SAP_FRONTEND_SESSION
+
+One of these per actual session, with coordinates and dimensions you'd expect
+
+
+
+
+Title: SAP Logon 750
+#32770
+
+This the SAP Logon window. dimensions as expected
+
+
