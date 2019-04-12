@@ -5,19 +5,28 @@
 		ALVGrid embedded in the middle of SAP screens without relying on MouseGetPos (does ControlGetFocus work? Yes!)
 		SAP Signature Theme Support
 		Blue Crystal Theme Support
-		LAN Check by Ping (still buggy in weird edge cases)
+		LAN Check by Ping (No longer buggy! I hope!)
+		LAN Check by ping: screen check no longer fails on the "details" screen for manually entered IP address/hostname tests
 		STAD Call subrecord dialog
+		getClassNNByPartial (now getClassNNByClass) needs to return all controls which match the partial name
+		Combine ALVGrid drop down and ALVGrid button functions; filter out exceptions in the main script body
+		click and restore function for moving the mouse to make a physical click then restoring the previous location (while supplying the clicked control)
+		unhide the standard ALV buttons before trying to click the export button
+		function for finding arbitrary buttons in a defined area
+		move specific screen functions to secondary files
 	
 	WIP:
-		
+		SAPGUI Theme detection solution for when the screen is maximized (for some reason the second monitor starts at coordinates 8,8 ????)
 	
 	TODO:
-		Oracle: table and index information windows
-		Combine ALVGrid drop down and ALVGrid button functions; filter out exceptions in the main script body
-		SAPGUI Theme detection solution for when the screen is maximized (for some reason the second monitor starts at coordinates 8,8 ????)
+		HARD - Oracle: table and index information dialogs (lots of annoying scrolling)
+		MEDIUM - ST13 -> Process Chain runtime Comparison (has 2 grids, top one has no export button T_T )
+		HARD - ST12 -> show call hierarchy when turned on
+		HARD - SQL summary Statement details (screen which shows fastest, slowest, average, calling source locations)
 		
 	Notes:
 	Try to avoid using ImageSearch where possible; different SAP themes and Character Sets require a lot of work to support
+	
 	
 	SAPGUI hotkeys:
 	https://help.sap.com/saphelp_tm80/helpdata/en/48/159ed688474c23e10000000a42189b/frameset.htm
@@ -29,179 +38,117 @@
 
 
 
+#NoEnv
+
 
 SetDefaultMouseSpeed, 0
+
+/*
+	reducing SetKeyDelay will make the script execute faster, but the trade off is stability
+	Most of the time spent waiting is for the server to format the output.
+	There is little to no appreciable gain to changing this.
+*/
 ;SetKeyDelay, 10
 
 
-Global flow_tracking:=
 
 
-getSapGuiThemePrefix(winID)
-{
+
+#include lib/helpers.ahk
+/*
+	Global exec_log:=
+	clearLog()
+	appendLog(line_num, mes)
+	getSapGuiThemePrefix(winID)
+	getControlProperties(winID, classnn)
+	getClassNNByClass(winID, partialclass, partialtext="")
+	moveClickRestore(winID, winx, winy, block=True, byref clicked_classnn = "")
+	findImage(x1, y1, x2, y2, name)
+*/
+
+#include lib/os01.ahk
+/*
+	whichLanCheckScreen(winID)
+	copyLanCheckScreenDetails(winID)
+	copyLanCheckScreen(winID)
+*/
+
+
+findExport(winID, parentclass, btype="button"){
 	/*
-		Important to know the theme when searching for buttons
+		parentclass here is an object with properites
+		obtained via lib/helpers.ahk:getControlProperties
+	*/
+	
+	appendLog(A_LineNumber, "looking for an export of type '" . btype . "' in control '" . parentclass.classnn . "'")
+	
+	;construct the filename
+	fn := ""
+	
+	if (btype = "button")
+	fn := "export_button"
+	else if (btype = "dropdown")
+	fn := "export_drop_button"
+	
+	fn1 := fn . ".png"
+	;for compatibility with other character sets
+	fn2 := fn . "_chubby.png"
+	
+	;get the search area
+	x1 := parentclass.x, x2 := parentclass.x + parentclass.w
+	y1 := parentclass.y, y2 := parentclass.y + parentclass.h
+	
+	xy := {}
+	
+	xy := findImage(x1, y1, x2, y2, fn1)
+	
+	if (ErrorLevel){
+		appendLog(A_LineNumber, "could not find the '" . fn1 . "' button in findExport")
 		
-		Colors are in RGB hex
-	*/
-	
-	blue_crystal = 0x009DE0
-	
-	CoordMode, Pixel, Window
-	PixelGetColor, bar_color, 3, 3, RGB
-	
-	if (bar_color = blue_crystal)
-	return "bc_"
-	
-	; search the upper right for the signature exit button
-	WinGetPos, , , xw, , ahk_id %winID%
-	
-	x1:=xw-100
-	y1:=0
-	x2:=xw
-	y2:=40
-	
-	ImageSearch, , , x1, y1, x2, y2, *50 themes/signature.png
-	
-	if (!ErrorLevel)
-	return "" ;signature theme image names have no prefix
-	
-	MsgBox Unsupported theme. Supported themes are:`r`nSAP Signature Theme`r`nBlue Crystal Theme`r`nIf you are receiving this message despite using a supported theme, mail I844387.
-	exit
-}
-
-getClassNNByPartial(winID, partialclass, partialtext="")
-{
-	/*
-		Obtains the ClassNN of a control which contains
-		partialclass in the Control ClassNN and
-		partialtext in the Control Text
-	*/
-	WinGet, controls, ControlList, ahk_id %winID%
-	;MsgBox %controls%
-	
-	Loop, Parse, controls, `n
-	{
-		cname = %A_LoopField%
-		if InStr(cname, partialclass)
-		{
-			;only want visible controls
-			ControlGet, isvisible, Visible, , %cname%, ahk_id %winID%
-			if (!isvisible)
-			continue
-			
-			ControlGetText, ctext, %cname%, ahk_id %winID%
-			
-			if (partialtext = "")
-			return cname
-			
-			if InStr(ctext, partialtext)
-			return cname
+		;check for the "chubby" version of the button
+		xy := findImage(x1, y1, x2, y2, fn2)
+		
+		if (ErrorLevel){
+			appendLog(A_LineNumber, "could not find the '" . fn2 . "' button in findExport")
+			return ""
 		}
 	}
-	return ""
+	
+	appendLog(A_LineNumber, "found an export at x,y:" . xy.x . "," . xy.y)
+	
+	return xy
 }
 
-whichLanCheckScreen(winID)
-{
-	/*
-		Used to determine which OS01 screen we're on at the moment
-		by examining the layout
-	*/
+waitForExportDropButton(winID, control_to_search, timeout=5){
 	
-	;check if button15 is visible first -> Server selection screen
-	ControlGet, bvisible, Visible, , Button15, ahk_id %winID%
-	if (ErrorLevel) ;if button doesn't exist, then we're not in OS01
-	return ""
-	if (bvisible) ;button not visible, we're in the detail screen
-	return "serverlist"
+	start_time := A_TickCount
+	timeout := timeout * 1000
 	
-	;check if button6 is visible next -> Server type screen
-	ControlGet, bvisible, Visible, , Button6, ahk_id %winID%
-	if (bvisible) ;button not visible, we're in the detail screen
-	return "servertypelist"
+	coord := getControlProperties(winID, control_to_search)
 	
-	;check if button3 is visible last -> Results screen
-	ControlGet, bvisible, Visible, , Button3, ahk_id %winID%
-	if (bvisible) ;button not visible, we're in the detail screen
-	return "results"
+	;control should exist
+	if (ErrorLevel){
+		appendLog(A_LineNumber, "could not retrieve the properties for control '" . control_to_search . "'")
+		return
+	}
 	
-	;last possibility is the Details screen
-	return "details"
-}
-
-copyLanCheckScreenDetails(winID)
-{
-	/*
-		assumes we are on the LAN check details screen
-		e.g.:   "03.04.2019 05:31:00       from <hostname> (n.n.n.n)"
+	;define search area
+	x := coord.x, x2 := coord.x + coord.w
+	y := coord.y, y2 := coord.y + coord.y
+	
+	while ((A_TickCount - start_time) < timeout){
 		
-		ControlSend is not reliable due to SAPGUI interpretation time
-		Controls sent with ControlSend might be ignore or behave weirdly
-		if SAPGUI is making UI adjustments (like shading a button you just hovered over)
-	*/
-	
-	;Get the header text
-	header_classnn:=getClassNNByPartial(winID, "Internet Explorer_Server")
-	ControlFocus, %header_classnn%, ahk_id %winID%
-	Send, ^a^c
-	
-	;save to clipboard and get rid of some whitespace
-	output:=ClipBoard
-	output:=StrReplace(output, "`r`n")
-	output:=RegExReplace(output, " {1,}", " ")
-	
-	;get the body text
-	body_classnn:=getClassNNByPartial(winID, "SAPALVGrid")
-	ControlFocus, %body_classnn%, ahk_id %winID%
-	
-	;ControlSend is unreliable here
-	Send, {Down}^{Space}^c
-
-	output=%output%`r`n`r`n%ClipBoard%
-	
-	Clipboard:=output
-}
-
-
-copyLanCheckScreen(winID)
-{
-	/*
-		The screens for ping result (overall and individual)
-	*/
-	
-	;we have to find out which screen we're on, the titles are the same for the most part
-	os01_screen:=whichLanCheckScreen(winID)
-	
-	if (os01_screen = "serverlist"){
-		if (tryExportButton(winID))
-		waitAndProcessSaveDialog()
-		exit
+		findImage(x, y, x2, y2, "export_drop_button.png")
+		
+		if (!ErrorLevel){
+			return
+		}
+		
+		sleep, 5
 	}
 	
-	if (os01_screen = "results"){
-		sendSystemListSave(winID)
-	}
-	
-	if (os01_screen = "details")
-	copyLanCheckScreenDetails(winID)
-	
-}
-
-
-waitForScroll()
-{
-	
-	
-}
-
-copyExecPlanDialog(winID)
-{
-	/*
-		The dialog window for the explain plan starts at 5,30
-		and ends at WinWidth-25,WinHeight-45
-	*/
-	
+	ErrorLevel := 1
+	appendLog(A_LineNumber, "timeout of " . timeout . "ms reached in waitForExportButton")
 	
 }
 
@@ -221,134 +168,144 @@ copySTADcallDialog(winID)
 	
 	Clipboard=%title%`r`n%ClipBoard%
 	
+	exit
 }
 
-
-tryExportDropDown(winID, ALVcname)
-{
-    /*  
-		SAPGUI ALV tables (without the application toolbar) ignores control clicks.
-		Not only that, it does this awful thing when a click event is registered 
-		in SAPGUI: SAPGUI ignores the click event's X,Y coordinates and instead 
-		reads the current mouse's position. As a result, we can't simply send a 
-		click event at exportX,exportY, we have to temporarily take control of the 
-		mouse and move it over the button.
-    */
+getToolbarWindowForALVGrid(winID, alvgridnn){
 	
-	flow_tracking=%flow_tracking%%A_LineNumber%: entering export drop down`r`n
+	toolbar_windows := getClassNNByClass(winID, "ToolbarWindow")
 	
-	;save current window
-	WinGet, winID, ID, A
-	WinGetPos, WX, WY, WW, WH, ahk_id %winID%
-	
-	;get the top border of the ALV grid
-	ControlGetPos, alvx, alvy, alvw, , %ALVcname%, ahk_id %winID%
-	
-	if (alvx = ""){ ;can't find the ALV control
-	flow_tracking=%flow_tracking%%A_LineNumber%: can't find ALV control`r`n
-	return false
+	if (ErrorLevel){
+		appendLog(A_LineNumber, "no ToolbarWindows found for ALVGrid '" . alvgridnn . "' in getToolbarWindowForALVGrid")
+		return ""
 	}
 	
-	;adjust for the toolbar search area
-	alvy2:=alvy
-	alvy-=80
-	alvx2:=alvx+alvw
+	appendLog(A_LineNumber, "found '" . toolbar_windows.Length() . "' ToolbarWindows in getToolbarWindowForALVGrid")
 	
-	theme_prefix:=getSapGuiThemePrefix(winID)
+	;no toolbar found, set error level and return
+	if (toolbar_windows.Length() = 0){
+		ErrorLevel:=1
+		return
+	}
 	
-	;find the button
-	CoordMode, Pixel, Window
-	ImageSearch, exportX, exportY, alvx, alvy, alvx2, alvy2, *30 %theme_prefix%export_drop_button.png
+	;exactly one toolbar is found
+	if (toolbar_windows.Length() = 1){
+		ErrorLevel:=0
+		return toolbar_windows[1]
+	}
 	
-	;In certain character sets, the buttons get kind of "chubby"
-	;check for this incase the above search didn't find anything
-	if (ErrorLevel)
-	ImageSearch, exportX, exportY, alvx, alvy, alvx2, alvy2, *30 %theme_prefix%export_drop_button_chubby.png
+	;TODO - search for the most reasonably positioned toolbar if there are multiple.
+	;for now we shortcut to the first result
 	
-	;incase we couldn't find a button
-	if (ErrorLevel)
-	return false
-	
-	flow_tracking=%flow_tracking%%A_LineNumber%: found a button, clicking now`r`n
-	
-    CoordMode, Mouse, Screen
-
-    ;window screen position + relative posisiton of the button + small offset
-    exportX:=WX+exportX+10
-    exportY:=WY+exportY+5
-
-    ;get the mouse's current position to restore later
-    MouseGetPos, mX, mY
-
-    ;move the mouse over the button, get the class name of the toolbar, and invoke a click
-    BlockInput, On
-    Click, %exportX%, %exportY%
-	MouseGetPos, , , , tbcname
-    BlockInput, Off
-
-    ;move the mouse back so as not to annoy the user (as much)
-    MouseMove, mX, mY, 0
-	
-	;Wait for that silly dialog box/menu to appear
-    WinWait, ahk_class #32768, , 3
-
-    ;send an 'l' to bring up the local file dialog box using the toolbar class name we obtained earlier
-    ControlSend, %tbcname%, l, ahk_id %winID%
-    
-    return true
+	ErrorLevel:=0
+	return toolbar_windows[1]
 }
 
-
-tryExportButton(winID)
+unhideStandardALVToolbar(winID, alv_toolbarnn)
 {
-	/*
-		The button on the ALV toolbar does not have a consistent classNN name 
-		across Tcodes/screens. Thus, as a catch all, we can identify it based 
-		on icon. However, we know it lives inside the container control with 
-		text "AppToolbar"
-		is consistent across screens
-	*/
 	
+	toolbar := getControlProperties(winID, alv_toolbarnn)
 	
+	tx := toolbar.x, ty = toolbar.y,
+	tx2 := toolbar.x + toolbar.w, ty2 := toolbar.y + toolbar.h
 	
-	;get the position of the toolbar, this is our image search area
-	ControlGetPos, tx, ty, tw, th, AppToolbar, ahk_id %winID%
+	;look for the unhide button
+	appendLog(A_LineNumber, "calling findImage(" . tx . "," . ty . "," . tx2 . "," . ty2 . ", ""show_std_alv.png"")")
+	coord := findImage(tx, ty, tx2, ty2, "show_std_alv.png")
 	
-	if (tx = "") ;this screen doesn't have a toolbar
-	return false
+	;if we didn't find un unhide button, either 
+	;it's not there or it's already been expanded
+	;so we don't need to go any further
+	if (ErrorLevel){
+		appendLog(A_LineNumber, "no unhide button found.")
+		ErrorLevel := 0
+		return
+	}
 	
-	;caluclate lower right x,y for the image search
-	tx2:=tx+tw
-	ty2:=ty+th
+	;we found an unhide button, so we need to click it.
+	moveClickRestore(winID, coord.x + 5, coord.y + 5)
 	
-	theme_prefix:=getSapGuiThemePrefix(winID)
+	;wait for the toolbar to expand, this is unfortunately a dialog step
+	waitForExportDropButton(winID, alv_toolbarnn)
 	
-	;find the export button on the toolbar
-	CoordMode, Pixel, Window
-	ImageSearch, exportX, exportY, tx, ty, tx2, ty2, *50 %theme_prefix%export_button.png
-	
-	;In certain character sets, the buttons get kind of "chubby"
-	;check for this incase the above search didn't find anything
-	if (ErrorLevel)
-	ImageSearch, exportX, exportY, tx, ty, tx2, ty2, *50 %theme_prefix%export_button_chubby.png
-	
-	;MsgBox image found at %exportX%,%exportY%
-	
-	if (ErrorLevel) ;this toolbar doesn't have an export button
-	return false
-	
-	exportX+=5
-	exportY+=3
-	
-	;MsgBox I am going to click at %exportX%,%exportY%.
-	
-	;sending a control click to the window is fine
-	;for some reason it fails with only a single click sometimes...
-	CoordMode, Mouse, Window
-	ControlClick, x%exportX% y%exportY%, ahk_id %winID%, , , 2
-	
-	return true
 }
+
+
+clickAppToolbarExport(winID){
+
+	appendLog(A_LineNumber, "trying the export button in the standard AppToolbar")
+	
+	t := getControlProperties(winID, "AppToolbar")
+	
+	if (ErrorLevel){
+		appendLog(A_LineNumber, "couldn't find the standard toolbar, AppToolbar, in processALVGrid")
+		return
+	}
+	
+	appendLog(A_LineNumber, "AppToolbar found at x,y:" . t.x . "," . t.y . " with w,h:" . t.w . "," . t.y)
+	
+	cxy := findExport(winID, t)
+	
+	if (ErrorLevel){
+		appendLog(A_LineNumber, "couldn't find the export button on the standard toolbar in processALVGrid")
+		return
+	}
+	
+	;we should see the export button in the standard toolbar now
+	cx := cxy.x + 5, cy := cxy.y + 5
+	appendLog(A_LineNumber, "ControlClick to x,y:" . cx . "," . cy)
+	CoordMode, Mouse, Window
+	ControlClick, x%cx% y%cy%, ahk_id %winID%, , , 2
+	
+	ErrorLevel := 0
+}
+
+processALVGrid(winID, alvgrid_nn){
+	
+	appendLog(A_LineNumber, "processing ALVGrid: '" . alvgrid_nn . "'")
+	
+	;first we try the nearby ToolbarWindow:
+	toolbar_windownn := getToolbarWindowForALVGrid(winID, alvgrid_nn)
+	
+	if (!ErrorLevel){
+		;found a ToolbarWindow
+		t := getControlProperties(winID, toolbar_windownn)
+		
+		appendLog(A_LineNumber, "found a ToolbarWindow: " . t.classnn . "," . t.x . "," . t.y . "," . t.w . "," . t.h)
+		
+		;ensure the standard ALV buttons are showing (i.e. ST05 hides them by default)
+		unhideStandardALVToolbar(winID, t.classnn)
+		
+		;look for an export button
+		eb := findExport(winID, t, "dropdown")
+		
+		if (ErrorLevel){
+			appendLog(A_LineNumber, "couldn't find an export drop down within control '" . t.classnn . "'")
+			goto, StandardToolbar
+		}
+		
+		ErrorLevel := 0
+		
+		;at this point we should see an export drop down button on the toolbar, click it
+		moveClickRestore(winID, eb.x + 5, eb.y + 5, True, tbcname)
+		
+		;Wait for that silly dialog box/menu to appear
+		WinWait, ahk_class #32768, , 4
+
+		;send an 'l' to bring up the local file dialog box using the toolbar class name we obtained earlier
+		ControlSend, %tbcname%, l, ahk_id %winID%
+		
+		return
+	}
+	
+	StandardToolbar:
+	;try the standard toolbar
+	
+	clickAppToolbarExport(winID)
+	
+	return
+}
+
 
 sendSystemListSave(winID=""){
 	;can we replace Send with ControlSend? SAPGUI seems to not like controlsend for this purpose
@@ -379,6 +336,13 @@ waitForSaveDialogToClose(){
 	WinWaitClose, Save list in file...
 }
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;
+; Main Entry point
+;;;;;;;;;;;;;;;;;;;;;;;
+
+
 #IfWinActive ahk_exe saplogon.exe
 ` Up::
 ;KeyWait, Control
@@ -389,14 +353,28 @@ waitForSaveDialogToClose(){
 	;don't do anything if it's just the Logon window
 	if InStr(WTitle, "SAP Logon")
 	exit
-	flow_tracking=
-	flow_tracking=%flow_tracking%%A_LineNumber%: checking exception list`r`n
+	clearLog()
+	appendLog(A_LineNumber, "checking exception list")
+	
+	;In case we've already opened a "save list in file..." dialog
+	if InStr(WTitle, "Save list in file..."){
+		waitAndProcessSaveDialog()
+		exit
+	}
 	
 	;Exception list
 	;these screens don't use ALV grids or the default key combination
+	;Or need some kind of special prep
+	
 	
     ;ST12 Trace list
     if (WTitle = "Trace analyses fullscreen list"){
+		Send, !exl
+		waitAndProcessSaveDialog()
+		exit
+	}
+	;ST12 SQL Summary
+	else if InStr(WTitle, "SQL Summary - "){
 		Send, !exl
 		waitAndProcessSaveDialog()
 		exit
@@ -407,34 +385,34 @@ waitForSaveDialogToClose(){
 		waitAndProcessSaveDialog()
 		exit
 	}
+	;OS01 - LAN Check by Ping
 	else if InStr(WTitle, "LAN Check by PING"){
 		copyLanCheckScreen(winID)
 		exit
 	}
+	;STAD RFC subrecord dialog
 	else if (InStr(WTitle, "RFC: ") = 1) AND InStr(WTitle, "Records"){
 		copySTADcallDialog(winID)
 	}
 	
-	flow_tracking=%flow_tracking%%A_LineNumber%: past exception list trying ALVGrid button`r`n
+	
+StandardControls:
+	
+	appendLog(A_LineNumber, "past exception list")
 	
 	;past exception list, check if we have an ALVGrid in focus
 	ControlGetFocus, cf, ahk_id %winID%
+	
+	appendLog(A_LineNumber, "current focus is ClassNN: '" . cf . "'")
+	
 	if InStr(cf, "SAPALVGrid"){
-		if (tryExportDropDown(winID, cf)){
+		processALVGrid(winID, cf)
+		if (!ErrorLevel)
 			waitAndProcessSaveDialog()
-			exit
-		}
-	}
-	
-	flow_tracking=%flow_tracking%%A_LineNumber%: trying apptoolbar button`r`n
-	
-	;at this point, check for an export button in the AppToolbar
-	if (tryExportButton(winID)){
-		waitAndProcessSaveDialog()
 		exit
 	}
 	
-	flow_tracking=%flow_tracking%%A_LineNumber%: sending default keystrokes`r`n
+	appendLog(A_LineNumber, "sending default keystrokes")
 	
 	;Default save as keys
 	sendSystemListSave(winID)
@@ -442,6 +420,43 @@ waitForSaveDialogToClose(){
     return
 	
 ;end of sapgui ^s
+
+
+
+
+
+
+
+
+/*
+
+
+;;;;;;;;;;;;;;;;;;;;;;
+; Debugging hotkeys: ;
+;;;;;;;;;;;;;;;;;;;;;;
+
+
+showGridsAndToolbars(){
+
+WinGet, winID, ID, A
+
+alvgrids:=getClassNNByClass(winID, "SAPALVGrid")
+
+toolbar_window:=getToolbarWindowForALVGrid(winID, "null")
+
+str:="grids: "
+grid:=""
+For Index, Value in alvgrids {
+	grid:=getControlProperties(winID, Value)
+	str .= Value . "," . grid.x . "," . grid.y . "," . grid.w . "," . grid.y . ";"
+}
+
+MsgBox % str . "`r`n" . "toolbar: " . toolbar_window
+
+return
+	
+}
+
 
 
 ^!x::
@@ -481,14 +496,23 @@ return
 
 ^!z::
 
-	WinGet, winID, ID, A
+KeyWait, Control
+KeyWait, Alt
 
-	prefix:=getSapGuiThemePrefix(winID)
+clearLog()
 
-	MsgBox prefix="%prefix%"
+WinGet, winID, ID, A
+
+processALVGrid(winID, "SAPALVGrid1")
+
+
+
+
 
 return
 
 ^`::
-	MsgBox, %flow_tracking%
+	MsgBox, %exec_log%
 return
+
+;*/
