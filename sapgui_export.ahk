@@ -366,7 +366,6 @@ waitForSaveDialogToClose(){
 	;these screens don't use ALV grids or the default key combination
 	;Or need some kind of special prep
 	
-	
     ;ST12 Trace list
     if (WTitle = "Trace analyses fullscreen list"){
 		Send, !exl
@@ -385,13 +384,20 @@ waitForSaveDialogToClose(){
 		waitAndProcessSaveDialog()
 		exit
 	}
+	;ST12 - Statistical Records
+	else if InStr(WTitle, "Collected Statistical records for analysis"){
+		Send, !exl
+		waitAndProcessSaveDialog()
+		exit
+	}
 	;OS01 - LAN Check by Ping
 	else if InStr(WTitle, "LAN Check by PING"){
 		copyLanCheckScreen(winID)
 		exit
 	}
 	;STAD RFC subrecord dialog
-	else if (InStr(WTitle, "RFC: ") = 1) AND InStr(WTitle, "Records"){
+	else if (InStr(WTitle, "RFC: ") = 1) AND InStr(WTitle, "Records")
+	     OR (InStr(WTitle, "HTTP: ") = 1) AND InStr(WTitle, "Records"){
 		copySTADcallDialog(winID)
 	}
 	
@@ -422,13 +428,18 @@ StandardControls:
 ;end of sapgui ^s
 
 
+;#IfWinActive ahk_exe EXCEL.EXE
+;^q::
+
+
+	return
+;end of Excel
 
 
 
 
 
 
-/*
 
 
 ;;;;;;;;;;;;;;;;;;;;;;
