@@ -24,8 +24,15 @@
 		HARD - ST12 -> show call hierarchy when turned on
 		HARD - SQL summary Statement details (screen which shows fastest, slowest, average, calling source locations)
 		
+		> cb_repairNewLineInTableCell is not robust enough, making replacements where it shouldn't
+		> clicking an ALVGrid in a window different from the active window does not immediately make the ALVGrid the focus
+		  this causes the default "system -> list -> save" to trigger. Not intended
+		> ST05 with hidden ALV buttons not supported at the moment. Have to screen cap all of the "show std ALV functions" buttons
+		
+		
 	Notes:
-	Try to avoid using ImageSearch where possible; different SAP themes and Character Sets require a lot of work to support
+	> Try to avoid using ImageSearch where possible
+	  different SAP themes and Character Sets require a lot of work to support
 	
 	
 	SAPGUI hotkeys:
@@ -51,14 +58,17 @@ SetDefaultMouseSpeed, 0
 ;SetKeyDelay, 10
 
 
+Global postprocess_sapgui := 1
 
+#include lib/logging.ahk
+/*
+	clearLog()
+	appendLog(mes)
+*/
 
 
 #include lib/helpers.ahk
 /*
-	Global exec_log:=
-	clearLog()
-	appendLog(line_num, mes)
 	getSapGuiThemePrefix(winID)
 	getControlProperties(winID, classnn)
 	getClassNNByClass(winID, partialclass, partialtext="")
@@ -66,245 +76,44 @@ SetDefaultMouseSpeed, 0
 	findImage(x1, y1, x2, y2, name)
 */
 
-#include lib/os01.ahk
+#include lib/cb_main.ahk
+/*
+	cb_sapguiPostProcess(byref cb_with_newlines)
+	cb_excelPreProcess(byref cb_with_newlines)
+	cb_removeInitialHeader(byref cb_with_newlines)
+	cb_getTableStartEndHeader(byref cb_array, byref start_i_out, byref end_i_out, byref header_i_out)
+	cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_separator)
+	cb_repairWideTable(byref cb_with_newlines)
+	cb_removeWhiteSpace(byref cb_with_newlines)
+	cb_removeLeadingBar(byref cb_with_newlines)
+	cb_removeHorizontalLines(byref cb_with_newlines)
+	cb_formatSimple(byref cb_with_newlines)
+*/
+
+#include lib/alvgrid.ahk
+/*
+	
+*/
+
+#include lib/tc_os01.ahk
 /*
 	whichLanCheckScreen(winID)
 	copyLanCheckScreenDetails(winID)
 	copyLanCheckScreen(winID)
 */
 
-
-findExport(winID, parentclass, btype="button"){
-	/*
-		parentclass here is an object with properites
-		obtained via lib/helpers.ahk:getControlProperties
-	*/
-	
-	appendLog(A_LineNumber, "looking for an export of type '" . btype . "' in control '" . parentclass.classnn . "'")
-	
-	;construct the filename
-	fn := ""
-	
-	if (btype = "button")
-	fn := "export_button"
-	else if (btype = "dropdown")
-	fn := "export_drop_button"
-	
-	fn1 := fn . ".png"
-	;for compatibility with other character sets
-	fn2 := fn . "_chubby.png"
-	
-	;get the search area
-	x1 := parentclass.x, x2 := parentclass.x + parentclass.w
-	y1 := parentclass.y, y2 := parentclass.y + parentclass.h
-	
-	xy := {}
-	
-	xy := findImage(x1, y1, x2, y2, fn1)
-	
-	if (ErrorLevel){
-		appendLog(A_LineNumber, "could not find the '" . fn1 . "' button in findExport")
-		
-		;check for the "chubby" version of the button
-		xy := findImage(x1, y1, x2, y2, fn2)
-		
-		if (ErrorLevel){
-			appendLog(A_LineNumber, "could not find the '" . fn2 . "' button in findExport")
-			return ""
-		}
-	}
-	
-	appendLog(A_LineNumber, "found an export at x,y:" . xy.x . "," . xy.y)
-	
-	return xy
-}
-
-waitForExportDropButton(winID, control_to_search, timeout=5){
-	
-	start_time := A_TickCount
-	timeout := timeout * 1000
-	
-	coord := getControlProperties(winID, control_to_search)
-	
-	;control should exist
-	if (ErrorLevel){
-		appendLog(A_LineNumber, "could not retrieve the properties for control '" . control_to_search . "'")
-		return
-	}
-	
-	;define search area
-	x := coord.x, x2 := coord.x + coord.w
-	y := coord.y, y2 := coord.y + coord.y
-	
-	while ((A_TickCount - start_time) < timeout){
-		
-		findImage(x, y, x2, y2, "export_drop_button.png")
-		
-		if (!ErrorLevel){
-			return
-		}
-		
-		sleep, 5
-	}
-	
-	ErrorLevel := 1
-	appendLog(A_LineNumber, "timeout of " . timeout . "ms reached in waitForExportButton")
-	
-}
-
-copySTADcallDialog(winID)
-{
-	/*
-		We also want to include the Window Title here for clarity as it's
-		not easily discernable by just the data alone. So we need to wait
-		for the save dialog to close then modify the clipboard contents
-	*/
-	
-	WinGetTitle, title, ahk_id %winID%
-	
-	ControlClick, Button2, ahk_id %winID%, , , 2
-	waitAndProcessSaveDialog()
-	waitForSaveDialogToClose()
-	
-	Clipboard=%title%`r`n%ClipBoard%
-	
-	exit
-}
-
-getToolbarWindowForALVGrid(winID, alvgridnn){
-	
-	toolbar_windows := getClassNNByClass(winID, "ToolbarWindow")
-	
-	if (ErrorLevel){
-		appendLog(A_LineNumber, "no ToolbarWindows found for ALVGrid '" . alvgridnn . "' in getToolbarWindowForALVGrid")
-		return ""
-	}
-	
-	appendLog(A_LineNumber, "found '" . toolbar_windows.Length() . "' ToolbarWindows in getToolbarWindowForALVGrid")
-	
-	;no toolbar found, set error level and return
-	if (toolbar_windows.Length() = 0){
-		ErrorLevel:=1
-		return
-	}
-	
-	;exactly one toolbar is found
-	if (toolbar_windows.Length() = 1){
-		ErrorLevel:=0
-		return toolbar_windows[1]
-	}
-	
-	;TODO - search for the most reasonably positioned toolbar if there are multiple.
-	;for now we shortcut to the first result
-	
-	ErrorLevel:=0
-	return toolbar_windows[1]
-}
-
-unhideStandardALVToolbar(winID, alv_toolbarnn)
-{
-	
-	toolbar := getControlProperties(winID, alv_toolbarnn)
-	
-	tx := toolbar.x, ty = toolbar.y,
-	tx2 := toolbar.x + toolbar.w, ty2 := toolbar.y + toolbar.h
-	
-	;look for the unhide button
-	appendLog(A_LineNumber, "calling findImage(" . tx . "," . ty . "," . tx2 . "," . ty2 . ", ""show_std_alv.png"")")
-	coord := findImage(tx, ty, tx2, ty2, "show_std_alv.png")
-	
-	;if we didn't find un unhide button, either 
-	;it's not there or it's already been expanded
-	;so we don't need to go any further
-	if (ErrorLevel){
-		appendLog(A_LineNumber, "no unhide button found.")
-		ErrorLevel := 0
-		return
-	}
-	
-	;we found an unhide button, so we need to click it.
-	moveClickRestore(winID, coord.x + 5, coord.y + 5)
-	
-	;wait for the toolbar to expand, this is unfortunately a dialog step
-	waitForExportDropButton(winID, alv_toolbarnn)
-	
-}
+#include lib/tc_stad.ahk
+/*
+	copySTADcallDialog(winID)
+*/
 
 
-clickAppToolbarExport(winID){
+#include lib/excel.ahk
+/*
+	excel_preProcess()
+*/
 
-	appendLog(A_LineNumber, "trying the export button in the standard AppToolbar")
-	
-	t := getControlProperties(winID, "AppToolbar")
-	
-	if (ErrorLevel){
-		appendLog(A_LineNumber, "couldn't find the standard toolbar, AppToolbar, in processALVGrid")
-		return
-	}
-	
-	appendLog(A_LineNumber, "AppToolbar found at x,y:" . t.x . "," . t.y . " with w,h:" . t.w . "," . t.y)
-	
-	cxy := findExport(winID, t)
-	
-	if (ErrorLevel){
-		appendLog(A_LineNumber, "couldn't find the export button on the standard toolbar in processALVGrid")
-		return
-	}
-	
-	;we should see the export button in the standard toolbar now
-	cx := cxy.x + 5, cy := cxy.y + 5
-	appendLog(A_LineNumber, "ControlClick to x,y:" . cx . "," . cy)
-	CoordMode, Mouse, Window
-	ControlClick, x%cx% y%cy%, ahk_id %winID%, , , 2
-	
-	ErrorLevel := 0
-}
 
-processALVGrid(winID, alvgrid_nn){
-	
-	appendLog(A_LineNumber, "processing ALVGrid: '" . alvgrid_nn . "'")
-	
-	;first we try the nearby ToolbarWindow:
-	toolbar_windownn := getToolbarWindowForALVGrid(winID, alvgrid_nn)
-	
-	if (!ErrorLevel){
-		;found a ToolbarWindow
-		t := getControlProperties(winID, toolbar_windownn)
-		
-		appendLog(A_LineNumber, "found a ToolbarWindow: " . t.classnn . "," . t.x . "," . t.y . "," . t.w . "," . t.h)
-		
-		;ensure the standard ALV buttons are showing (i.e. ST05 hides them by default)
-		unhideStandardALVToolbar(winID, t.classnn)
-		
-		;look for an export button
-		eb := findExport(winID, t, "dropdown")
-		
-		if (ErrorLevel){
-			appendLog(A_LineNumber, "couldn't find an export drop down within control '" . t.classnn . "'")
-			goto, StandardToolbar
-		}
-		
-		ErrorLevel := 0
-		
-		;at this point we should see an export drop down button on the toolbar, click it
-		moveClickRestore(winID, eb.x + 5, eb.y + 5, True, tbcname)
-		
-		;Wait for that silly dialog box/menu to appear
-		WinWait, ahk_class #32768, , 4
-
-		;send an 'l' to bring up the local file dialog box using the toolbar class name we obtained earlier
-		ControlSend, %tbcname%, l, ahk_id %winID%
-		
-		return
-	}
-	
-	StandardToolbar:
-	;try the standard toolbar
-	
-	clickAppToolbarExport(winID)
-	
-	return
-}
 
 
 sendSystemListSave(winID=""){
@@ -316,7 +125,7 @@ sendSystemListSave(winID=""){
 	
 	Send, !ytai
 	waitAndProcessSaveDialog()
-	exit
+	flushLogAndExit()
 }
 
 waitAndProcessSaveDialog(secondsToWait=8)
@@ -327,7 +136,7 @@ waitAndProcessSaveDialog(secondsToWait=8)
     ;But control click works fine! (hopefully they never change the layout of this dialog)
     ControlClick, x25 y220, Save list in file...,,,, Pos
 	;doesn't always work unless we sleep for a bit
-	Sleep, 10
+	Sleep, 15
     ;ControlClick, x210 y255, Save list in file...,,,, Pos
 	ControlSend, , {Enter}, Save list in file...
 }
@@ -336,12 +145,27 @@ waitForSaveDialogToClose(){
 	WinWaitClose, Save list in file...
 }
 
+sapgui_postProcess(){
+	
+	cb:=clipboard
+	
+	cb_removeInitialHeader(cb)
+	cb_removeTrailingPage(cb)
+	
+	cb_repairWideTable(cb)
+	
+	;temporarily ignore needs work
+	;sleep 500
+	;cb_repairNewLineInTableCell(cb)
+	;sleep 500
+	
+	clipboard:=cb
+}
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
-; Main Entry point
+;        SAPGUI       ;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
 
 #IfWinActive ahk_exe saplogon.exe
 ` Up::
@@ -352,14 +176,17 @@ waitForSaveDialogToClose(){
 	
 	;don't do anything if it's just the Logon window
 	if InStr(WTitle, "SAP Logon")
-	exit
+	
+	flushLogAndExit()
+	
 	clearLog()
-	appendLog(A_LineNumber, "checking exception list")
+	appendLog("checking exception list")
 	
 	;In case we've already opened a "save list in file..." dialog
 	if InStr(WTitle, "Save list in file..."){
 		waitAndProcessSaveDialog()
-		exit
+		sapgui_postProcess()
+		flushLogAndExit()
 	}
 	
 	;Exception list
@@ -370,30 +197,30 @@ waitForSaveDialogToClose(){
     if (WTitle = "Trace analyses fullscreen list"){
 		Send, !exl
 		waitAndProcessSaveDialog()
-		exit
+		flushLogAndExit()
 	}
 	;ST12 SQL Summary
 	else if InStr(WTitle, "SQL Summary - "){
 		Send, !exl
 		waitAndProcessSaveDialog()
-		exit
+		flushLogAndExit()
 	}
     ;ST12 trace details
     else if InStr(WTitle, "ABAP Trace Per Call"){
 		Send, !sxl
 		waitAndProcessSaveDialog()
-		exit
+		flushLogAndExit()
 	}
 	;ST12 - Statistical Records
 	else if InStr(WTitle, "Collected Statistical records for analysis"){
 		Send, !exl
 		waitAndProcessSaveDialog()
-		exit
+		flushLogAndExit()
 	}
 	;OS01 - LAN Check by Ping
 	else if InStr(WTitle, "LAN Check by PING"){
 		copyLanCheckScreen(winID)
-		exit
+		flushLogAndExit()
 	}
 	;STAD RFC subrecord dialog
 	else if (InStr(WTitle, "RFC: ") = 1) AND InStr(WTitle, "Records")
@@ -401,39 +228,35 @@ waitForSaveDialogToClose(){
 		copySTADcallDialog(winID)
 	}
 	
-	
-StandardControls:
-	
-	appendLog(A_LineNumber, "past exception list")
+	appendLog("past exception list")
 	
 	;past exception list, check if we have an ALVGrid in focus
 	ControlGetFocus, cf, ahk_id %winID%
 	
-	appendLog(A_LineNumber, "current focus is ClassNN: '" . cf . "'")
+	appendLog("current focus is '" . cf . "'")
 	
 	if InStr(cf, "SAPALVGrid"){
 		processALVGrid(winID, cf)
-		if (!ErrorLevel)
+		if (!ErrorLevel){
 			waitAndProcessSaveDialog()
-		exit
+			if (postprocess_sapgui){
+				waitForSaveDialogToClose()
+				sapgui_postProcess()
+			}
+		}
+		flushLogAndExit()
 	}
 	
-	appendLog(A_LineNumber, "sending default keystrokes")
+	appendLog("sending default keystrokes")
 	
 	;Default save as keys
 	sendSystemListSave(winID)
 
-    return
+return
 	
-;end of sapgui ^s
+;end of sapgui
 
 
-;#IfWinActive ahk_exe EXCEL.EXE
-;^q::
-
-
-	return
-;end of Excel
 
 
 
@@ -449,60 +272,24 @@ StandardControls:
 
 showGridsAndToolbars(){
 
-WinGet, winID, ID, A
+	WinGet, winID, ID, A
 
-alvgrids:=getClassNNByClass(winID, "SAPALVGrid")
+	alvgrids:=getClassNNByClass(winID, "SAPALVGrid")
 
-toolbar_window:=getToolbarWindowForALVGrid(winID, "null")
+	toolbar_window:=getToolbarWindowForALVGrid(winID, "null")
 
-str:="grids: "
-grid:=""
-For Index, Value in alvgrids {
-	grid:=getControlProperties(winID, Value)
-	str .= Value . "," . grid.x . "," . grid.y . "," . grid.w . "," . grid.y . ";"
-}
+	str:="grids: "
+	grid:=""
+		For Index, Value in alvgrids {
+			grid:=getControlProperties(winID, Value)
+			str .= Value . "," . grid.x . "," . grid.y . "," . grid.w . "," . grid.y . ";"
+		}
 
-MsgBox % str . "`r`n" . "toolbar: " . toolbar_window
+	MsgBox % str . "`r`n" . "toolbar: " . toolbar_window
 
-return
+	return
 	
 }
-
-
-
-^!x::
-	; WinGet, PName, ProcessName, A
-	; if (PName = "saplogon.exe")
-	; {
-		; WinGetTitle, WTitle, A
-		; MsgBox, The active window is "%WTitle%".
-	; }
-
-	; WinGet, winID, ID, A
-	; WinGetTitle, winTitle, ahk_id %winID%
-
-	; MsgBox, %winID%`n%winTitle%
-
-	WinGet, process, PID, A
-	WinGet, winIDs, List, ahk_pid %process%
-
-	Loop, %winIDs%
-	{
-		id := winIDs%A_Index%
-		WinGetTitle, Title, ahk_id %id%
-		WinGetClass, wclass, ahk_id %id%
-		WinGetPos, wx, wy, ww, wh, ahk_id %id%
-		
-		if (wclass = "WindowsFormsSapFocus") ;focus rectangle
-			continue
-		if InStr(wclass, "Afx") ;session borders
-			continue
-		
-		;if (wclass = "#32768")
-			MsgBox, %id%`n%Title%`n%wclass%`nX:%wx%,Y:%wy%`nW:%ww%,H:%wh%
-	}
-
-return
 
 
 ^!z::
@@ -510,20 +297,78 @@ return
 KeyWait, Control
 KeyWait, Alt
 
-clearLog()
+	clearLog()
 
-WinGet, winID, ID, A
+	;WinGet, winID, ID, A
 
-processALVGrid(winID, "SAPALVGrid1")
+	;processALVGrid(winID, "SAPALVGrid1")
+
+	;prefix:=getSapGuiThemePrefix(winID)
+	
+	;MsgBox % test
 
 
-
-
-
-return
-
-^`::
-	MsgBox, %exec_log%
 return
 
 ;*/
+
+
+;;;;;;;;;;;;;;;;;;;;;;;
+; Excel               ;
+;;;;;;;;;;;;;;;;;;;;;;;
+#IfWinActive ahk_exe EXCEL.EXE
+^q::
+	
+	WinGet, winID, ID, A
+	;script must be running at the same privilege level as Excel (i.e. administrator)
+	; https://stackoverflow.com/a/43875164
+	xl := ComObjActive("Excel.Application")
+	cb:=clipboard
+	temp:=cb
+	
+	excel_setSeparators(xl, cb)
+	excel_preProcess(cb)
+	
+	clipboard:=cb
+	ControlSend, , ^v, ahk_id %winID%
+	sleep 500
+	clipboard:=temp
+	
+	
+	return
+;end of Excel
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;
+; Notepad++           ;
+;;;;;;;;;;;;;;;;;;;;;;;
+
+#IfWinActive ahk_exe notepad++.exe
+^q::
+	
+	clearLog()
+	
+	cb := clipboard
+	
+	;cb_repairWideTable(cb)
+	cb_repairNewLineInTableCell(cb)
+	
+	clipboard:=cb
+	
+	
+	return
+;end of Notepad++
+
+
+;;;;;;;;;;;;;;;;;;;;;;;
+; BCP                 ;
+;;;;;;;;;;;;;;;;;;;;;;;
+/*
+#IfWinActive ahk_exe chrome.exe
+^`::
+
+
+
+return
+*/

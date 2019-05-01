@@ -80,28 +80,28 @@ copyLanCheckScreen(winID)
 		The screens for ping result (overall and individual)
 	*/
 	
-	appendLog(A_LineNumber, "entering copyLanCheckScreen")
+	appendLog("entering copyLanCheckScreen")
 	
 	;we have to find out which screen we're on, the titles are the same for the most part
 	os01_screen:=whichLanCheckScreen(winID)
 	
-	appendLog(A_LineNumber, "I think I'm on screen %os01_screen%")
+	appendLog("I think I'm on screen %os01_screen%")
 	
 	if (os01_screen = "serverlist"){
-		appendLog(A_LineNumber, "executing 'serverlist' screen copy")
+		appendLog("executing 'serverlist' screen copy")
 		clickAppToolbarExport(winID)
 		if (!ErrorLevel)
 			waitAndProcessSaveDialog()
-		exit
+		flushLogAndExit()
 	}
 	
 	if (os01_screen = "results"){
-		appendLog(A_LineNumber, "executing 'results' screen copy")
+		appendLog("executing 'results' screen copy")
 		sendSystemListSave(winID)
 	}
 	
 	if (os01_screen = "details"){
-		appendLog(A_LineNumber, "executing 'details' screen copy")
+		appendLog("executing 'details' screen copy")
 		copyLanCheckScreenDetails(winID)
 	}
 	

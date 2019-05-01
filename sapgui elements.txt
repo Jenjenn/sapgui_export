@@ -42,3 +42,9 @@ Title: SAP Logon 750
 This the SAP Logon window. dimensions as expected
 
 
+
+
+The main toolbar in SAPGUI which contains the command field
+ClassNN:	Afx:01C70000:0:00010005:00000010:000000001
+
+

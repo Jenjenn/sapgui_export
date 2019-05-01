@@ -1,52 +1,101 @@
-Global exec_log:=
+/*
+	Contains helper functions for all other files
+	
+	Multidimensial arrays:
+	https://autohotkey.com/board/topic/99583-quick-how-do-i-make-a-multidimensional-array/
+*/
 
-clearLog(){
-	global exec_log:=
-}
 
-appendLog(line_num, mes){
-	global exec_log .= line_num . ": " . mes . "`r`n"
-	return
-}
+/*
+	Sources for different export button visuals:
+	ToolbarWindow:
+		ALVgrid drop down : ST04 -> SQL Command Editor
+		ALVgrid button    : SAT -> Hit List
+		
+	AppToolbar:
+		button            : SM50
+*/
+
+
+Global sapgui_theme_images:={}
+
+;Signature theme images
+sapgui_theme_images.signature:=[]
+sapgui_theme_images.signature[1]:=LoadPicture("signature/western_menu.png")
+sapgui_theme_images.signature[2]:=LoadPicture("signature/western_menu_inverted.png")
+sapgui_theme_images.signature[3]:=LoadPicture("signature/eastern_menu.png")
+sapgui_theme_images.signature[4]:=LoadPicture("signature/eastern_menu_inverted.png")
+
+
+
+
+
 
 
 getSapGuiThemePrefix(winID)
 {
 	/*
 		Important to know the theme when searching for buttons
-		
 		Colors are in RGB hex
 	*/
 	
-	;Can't use this since the Starting position of the
-	;window can change if it's on your secondary monitor
-	;blue_crystal = 0x009DE0
+	;the window's y starts at 8 if it's maximized
+	WinGet, is_max, MinMax, ahk_id %winID%
+	offset:= is_max = 1 ? 8 : 0
+
+/*  ;;;;;;;;;;;;;;;;;;
+	Blue Crystal Theme
+*/	;;;;;;;;;;;;;;;;;;
+
+	blue_crystal = 0x009DE0
 	
 	CoordMode, Pixel, Window
-	;PixelGetColor, bar_color, 3, 3, RGB
+	PixelGetColor, bar_color, 12, % offset + 2, RGB
 	
-	;search for the SAPGUI window menu button in the top left
-	ImageSearch, , , 0, 0, 48, 40, *20 themes/blue_crystal.png
+	/*
+	MsgBox % "winID = " . winID
+	. "`r`nis_max = " . is_max
+	. "`r`nyoffset = " . offset
+	. "`r`nbar color is : " . bar_color
+	*/
 	
-	if (!ErrorLevel)
-	return "bluecrystal/"
+	if (bar_color = blue_crystal)
+		return "bluecrystal/"
 	
-	; search the upper right for the signature exit button
+/*  ;;;;;;;;;;;;;;;
+	Signature Theme
+*/  ;;;;;;;;;;;;;;;
+	
+	
+	; search the upper left for the window menu buttons
 	WinGetPos, , , xw, , ahk_id %winID%
 	
-	x1:=xw-100
-	y1:=0
-	x2:=xw
-	y2:=40
+	x1:=offset
+	y1:=offset
+	x2:=50 + offset
+	y2:=50 + offset
 	
-	ImageSearch, , , x1, y1, x2, y2, *50 themes/signature.png
+	CoordMode, Pixel, Window
+;	for i, image in sapgui_signature_theme_images {
+;		ImageSearch, , , x1, y1, x2, y2, *10 HBITMAP:*%image%
+;		if (!ErrorLevel)
+;			return "signature/"
+;	}
 	
-	if (!ErrorLevel)
-	return "signature/"
+	for i, image in sapgui_theme_images.signature {
+		ImageSearch, , , x1, y1, x2, y2, *10 HBITMAP:*%image%
+		if (!ErrorLevel)
+			return "signature/"
+	}
 	
-	MsgBox Unsupported theme. Supported themes are:`r`nSAP Signature Theme`r`nBlue Crystal Theme`r`nIf you are receiving this message despite using a supported theme, mail I844387.
 	
-	exit
+/*  ;;;;;;;;;;;;;;
+	No Theme Found
+*/  ;;;;;;;;;;;;;;
+	
+	;MsgBox Unsupported theme. Supported themes are:`r`nSAP Signature Theme`r`nBlue Crystal Theme`r`nIf you are receiving this message despite using a supported theme, mail I844387.
+	
+	flushLogAndExit()
 }
 
 
@@ -72,6 +121,16 @@ getControlProperties(winID, classnn){
 	return cntl
 }
 
+getDistanceBetweenTwoControls(win_id, c1, c2){
+/*
+	Accepts classnn values
+	returns the distance between the top left corners of two controls
+*/
+	ControlGetPos, x1, y1, , , %c1%, ahk_id %win_id%
+	ControlGetPos, x2, y2, , , %c2%, ahk_id %win_id%
+	
+	return sqrt( (x1 - x2)**2 + (y1 - y2)**2 )
+}
 
 getClassNNByClass(winID, partialclass, partialtext="")
 {
@@ -81,7 +140,7 @@ getClassNNByClass(winID, partialclass, partialtext="")
 		partialtext in the Control Text
 	*/
 	
-	appendLog(A_LineNumber, "looking for controls with class name '" . partialclass . "'")
+	appendLog("looking for '" . partialclass . "' in getClassNNByClass")
 	
 	WinGet, controls, ControlList, ahk_id %winID%
 	;MsgBox %controls%
@@ -103,7 +162,7 @@ getClassNNByClass(winID, partialclass, partialtext="")
 			
 			if (partialtext = "" 
 			OR InStr(ctext, partialtext)){
-				appendLog(A_LineNumber, "found a matching control: '" . cname . "'")
+				appendLog("found '" . cname . "'")
 				Results.push(cname)
 			}
 		}
@@ -139,7 +198,9 @@ moveClickRestore(winID, winx, winy, block=True, byref clicked_classnn = ""){
 	MouseMove, mx, my, 0
 }
 
-findImage(x1, y1, x2, y2, name){
+findImage(winID, x1, y1, x2, y2, name){
+	
+	appendLog("findImage(" . x1 . "," . y1 . "," . x2 . "," . y2 . ", " . name . ")")
 	
 	coord:={}
 	
@@ -150,20 +211,20 @@ findImage(x1, y1, x2, y2, name){
 	
 	;check that the image exists:
 	if (FileExist(image_path) = ""){
-		MsgBox, File not found : "%image_path%" . Exiting script
-		exit
+		appendLog("'" . image_path . "' not found. Has it been screenshot yet?")
+		ErrorLevel:=2
+		return ""
 	}
 	
 	CoordMode, Pixel, Window
 	ImageSearch, bx, by, x1, y1, x2, y2, *50 %image_path%
 	
-	if (ErrorLevel){
+	if (ErrorLevel)
 		return ""
-	}
 	
 	coord.x := bx, coord.y := by
 	
-	appendLog(A_LineNumber, "found image '" . name . "' at x,y:" . coord.x . "," . coord.y)
+	appendLog("found image; returning x,y:" . coord.x . "," . coord.y)
 	
 	return coord
 }
