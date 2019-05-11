@@ -14,26 +14,48 @@ clearLog(){
 appendLog(mes, stack_offset:=-1){
 /*
 	Format is:
-	ms
-	nnnn : file : line : message   (executing function)
+	nnnn ms : file : line : message   (executing function)
 */
 	logger := Exception(".", stack_offset)
 	caller := Exception(".", stack_offset - 1)
 	
+	;indent formatting based on stack level
+	i:=-1
+	e := Exception(".", i)
+	
+	while (e.What != i){
+		i--
+		e:=Exception(".", i)
+	}
+	
+	depth:= (-1 * i) - 2
+	offset:=""
+	while (depth > 1){
+		offset .= "  "
+		depth--
+	}
+	;end of indent formatting
 	
 	SplitPath, % logger.file, fname
 	
 	diff := A_TickCount - script_start
 	
-	loglinepre:=Format("{:5} ms : {:-18}:{:-4} : {}   ({})"
-	, diff, fname, logger.line, mes, caller.what)
+	loglinepre:=Format("{:5} ms : {:-18}:{:-4} : {}{}   ({})"
+	, diff, fname, logger.line, offset, mes, caller.what)
 	
 	global exec_log .= loglinepre . "`r`n"
 }
 
+flushLog(){
+	appendLog("flush called by ===>", -2)
+	
+	FileAppend, %exec_log%, log.txt, UTF-8
+	global exec_log:=""
+	;MsgBox % A_WorkingDir
+}
 
 flushLogAndExit(){
-	appendLog("flushing log and exiting", -2)
+	appendLog("flush and exit called by ===>", -2)
 	
 	FileAppend, %exec_log%, log.txt, UTF-8
 	;MsgBox % A_WorkingDir

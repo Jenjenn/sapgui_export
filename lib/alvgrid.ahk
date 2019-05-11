@@ -15,52 +15,37 @@ findExport(winID, parentclass, byref type_found=""){
 	appendLog("export search in control '" . parentclass.classnn . "'")
 	
 	;get the search area
-	x1 := parentclass.x, x2 := parentclass.x + parentclass.w
-	y1 := parentclass.y, y2 := parentclass.y + parentclass.h
+	;x1 := parentclass.x, x2 := parentclass.x + parentclass.w
+	;y1 := parentclass.y, y2 := parentclass.y + parentclass.h
 	
 	;construct the filenames
 	;TODO : preload/cache the images in the helpers.ahk file
-	exports:=[]
-	types:=[]
+	elements:=[]
+	
 	
 	if (InStr(parentclass.classnn, "ToolbarWindow")){
-		exports.push("western_tbw_drop.png")
-		types.push("drop_down")
-		exports.push("eastern_tbw_drop.png")
-		types.push("drop_down")
-		exports.push("western_tbw_button.png")
-		types.push("button")
-		exports.push("eastern_tbw_button.png")
-		types.push("button")
+		elements.push("tbw_exp_drop")
+		elements.push("tbw_exp_btn")
 	}
 	else{
-		exports.push("western_at_button.png")
-		types.push("button")
-		exports.push("eastern_at_button.png")
-		types.push("button")
+		elements.push("at_exp_btn")
 	}
 	
-	found_i:=-1
-	for i, ex in exports {
-		xy := findImage(winID, x1, y1, x2, y2, ex)
+	
+	for i, elem in elements {
+		xy := locateGuiElementWithinParent(winID, parentclass, elem)
 		if (!ErrorLevel){
-			found_i:=i
-			break
-		}
-		else{
-		;MsgBox % "couldn't find " . ex
+			;found
+			type_found:=getGuiElementType(elem)
+			appendLog("export of type '" . type_found . "' at x,y:" . xy.x . "," . xy.y)
+			return xy
 		}
 	}
 	
-	if (ErrorLevel){
-		type_found:=""
-		appendLog("no export found")
-		return {}
-	}
-	
-	appendLog("export at x,y:" . xy.x . "," . xy.y)
-	type_found:=types[found_i]
-	return xy
+	;not found
+	ErrorLevel:=1
+	appendLog("no export found")
+	return ""
 }
 
 
@@ -83,7 +68,7 @@ waitForExportDropButton(winID, control_to_search, timeout=5){
 	
 	while ((A_TickCount - start_time) < timeout){
 		
-		findImage(winID, x, y, x2, y2, "export_drop_button.png")
+		locateGuiElement(winID, x, y, x2, y2, "tbw_exp_drop")
 		
 		if (!ErrorLevel){
 			return
@@ -98,8 +83,12 @@ waitForExportDropButton(winID, control_to_search, timeout=5){
 }
 
 getToolbarWindowForALVGrid(winID, alvgridnn){
+/*
+	TODO:
+	only elect toolbars which have a lower y value (i.e. above the alvgrid)
+*/
 	
-	appendLog("'" . alvgridnn . "' in getToolbarWindowForALVGrid")
+	appendLog("getting ToolbarWindow for '" . alvgridnn . "'")
 	
 	toolbar_windows := getClassNNByClass(winID, "ToolbarWindow")
 	
@@ -157,7 +146,10 @@ unhideStandardALVToolbar(winID, alv_toolbarnn)
 	
 	;look for the unhide button
 	
-	coord := findImage(winID, tx, ty, tx2, ty2, "show_std_alv.png")
+	;TEMPORARILY DISABLED
+	;coord := findImage(winID, tx, ty, tx2, ty2, "show_std_alv.png")
+	ErrorLevel:=1
+	;TEMPORARILY DISABLED
 	
 	;if we didn't find un unhide button, either 
 	;it's not there or it's already been expanded
@@ -235,13 +227,18 @@ processALVGrid(winID, alvgrid_nn){
 		ErrorLevel := 0
 		
 		;at this point we should see an export drop down button on the toolbar, click it
-		moveClickRestore(winID, eb.x + 5, eb.y + 5, False, tbcname)
+		moveClickRestore(winID, eb.x + 5, eb.y + 5, tbcname)
 		
 		
-		if (btype = "drop_down"){
+		if (btype = "dd_button"){
 			;Wait for that silly dialog box/menu to appear
 			appendLog("waiting for #32768")
 			WinWait, ahk_class #32768, , 4
+			
+			if (ErrorLevel){
+				appendLog("timeout waiting for #32768; exiting")
+				flushLogAndExit()
+			}
 			appendLog("#32768 is visible")
 
 			;send an 'l' to bring up the local file dialog box using the toolbar class name we obtained earlier

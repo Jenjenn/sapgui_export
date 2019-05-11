@@ -16,23 +16,100 @@
 		button            : SM50
 */
 
+/*
+	image library hierarchy:
+	
+	root -> theme -> image_name -> [image handles & properties]
+	e.g.
+	root -> blue_crystal -> tbw_drop -> western
+	root -> blue_crystal -> tbw_drop -> eastern
+	root -> blue_crystal -> tbw_drop -> type
+	
+	(we need to know what *type* of GUI control it is to know how)
+	(to proceed after clicking it; e.g. button vs drop down    )
+	
+	Or should I do it this way:
+	root -> blue_crystal -> tbw_drop -> variants -> array with different styles
+	(this allows arbitrary number of visual styles vs just eastern & western)
+	root -> blue_crystal -> tbw_drop -> type
+*/
 
-Global sapgui_theme_images:={}
 
-;Signature theme images
-sapgui_theme_images.signature:=[]
-sapgui_theme_images.signature[1]:=LoadPicture("signature/western_menu.png")
-sapgui_theme_images.signature[2]:=LoadPicture("signature/western_menu_inverted.png")
-sapgui_theme_images.signature[3]:=LoadPicture("signature/eastern_menu.png")
-sapgui_theme_images.signature[4]:=LoadPicture("signature/eastern_menu_inverted.png")
+;preload the visual elements of SAPGUI
+Global sapgui_elements:={}
+	
+	;the top left menu of the SAPGUI window, used in theme detection
+	sapgui_elements.window_menu:={}
+	sapgui_elements.window_menu.signature:={ handles:[] }
+	sapgui_elements.window_menu.signature.handles[1]:=LoadPicture("signature/western_menu.png")
+	sapgui_elements.window_menu.signature.handles[2]:=LoadPicture("signature/western_menu_inverted.png")
+	sapgui_elements.window_menu.signature.handles[3]:=LoadPicture("signature/eastern_menu.png")
+	sapgui_elements.window_menu.signature.handles[4]:=LoadPicture("signature/eastern_menu_inverted.png")
+	
+	
+	;the export button which appears in ToolbarWindow controls
+	;sapgui_elements.tbw_exp_drop:={ etype:"dd_button" }
+	sapgui_elements.tbw_exp_drop:={}
+	
+		sapgui_elements.tbw_exp_drop.etype:="dd_button" 
+	
+		sapgui_elements.tbw_exp_drop.blue_crystal:={ handles:[] }
+		sapgui_elements.tbw_exp_drop.blue_crystal.handles[1]:=LoadPicture("blue_crystal/western_tbw_drop.png")
+		sapgui_elements.tbw_exp_drop.blue_crystal.handles[2]:=LoadPicture("blue_crystal/eastern_tbw_drop.png")
+	
+		sapgui_elements.tbw_exp_drop.signature:={ handles:[] }
+		sapgui_elements.tbw_exp_drop.signature.handles[1]:=LoadPicture("signature/western_tbw_drop.png")
+		sapgui_elements.tbw_exp_drop.signature.handles[2]:=LoadPicture("signature/eastern_tbw_drop.png")
+		
+		;put new themes here
+		
+	
+	;the export drop down button which appears in ToolbarWindow controls
+	sapgui_elements.tbw_exp_btn:={ etype:"button" }
+	
+		sapgui_elements.tbw_exp_btn.blue_crystal:={ handles:[] }
+		sapgui_elements.tbw_exp_btn.blue_crystal.handles[1]:=LoadPicture("blue_crystal/western_tbw_button.png")
+		sapgui_elements.tbw_exp_btn.blue_crystal.handles[2]:=LoadPicture("blue_crystal/eastern_tbw_button.png")
+		
+		sapgui_elements.tbw_exp_btn.signature:={ handles:[] }
+		sapgui_elements.tbw_exp_btn.signature.handles[1]:=LoadPicture("signature/western_tbw_button.png")
+		sapgui_elements.tbw_exp_btn.signature.handles[2]:=LoadPicture("signature/eastern_tbw_button.png")
+		
+		;put new themes here
+		
+	
+	;the export button which appears in ApplicationToolbar controls
+	sapgui_elements.at_exp_btn:={ etype:"button" }
+	
+		sapgui_elements.at_exp_btn.blue_crystal:={ handles:[] }
+		sapgui_elements.at_exp_btn.blue_crystal.handles[1]:=LoadPicture("blue_crystal/western_at_button.png")
+		sapgui_elements.at_exp_btn.blue_crystal.handles[2]:=LoadPicture("blue_crystal/eastern_at_button.png")
+		
+		sapgui_elements.at_exp_btn.signature:={ handles:[] }
+		sapgui_elements.at_exp_btn.signature.handles[1]:=LoadPicture("signature/western_at_button.png")
+		sapgui_elements.at_exp_btn.signature.handles[2]:=LoadPicture("signature/eastern_at_button.png")
+		
+		;put new themes here
+		
+	
+	;the button that turns off the call stack in ST12
+	sapgui_elements.at_stkoff_btn:={ etype:"button" }
+	
+		sapgui_elements.at_stkoff_btn.blue_crystal:= { handles:[] }
+		sapgui_elements.at_stkoff_btn.blue_crystal.handles[1]:=LoadPicture("blue_crystal/western_at_stkoff_button.png")
+		sapgui_elements.at_stkoff_btn.blue_crystal.handles[2]:=LoadPicture("blue_crystal/eastern_at_stkoff_button.png")
+		
+		;NOT YET IMPLEMENTED
+		sapgui_elements.at_stkoff_btn.signature:= { handles:[] }
+		sapgui_elements.at_stkoff_btn.signature.handles[1]:=LoadPicture("signature/western_at_stkoff_button.png")
+		sapgui_elements.at_stkoff_btn.signature.handles[2]:=LoadPicture("signature/eastern_at_stkoff_button.png")
+	
+		;put new themes here
+	
+	;add new GUI elements here
+	
 
-
-
-
-
-
-
-getSapGuiThemePrefix(winID)
+getSapGuiTheme(winID)
 {
 	/*
 		Important to know the theme when searching for buttons
@@ -47,7 +124,7 @@ getSapGuiThemePrefix(winID)
 	Blue Crystal Theme
 */	;;;;;;;;;;;;;;;;;;
 
-	blue_crystal = 0x009DE0
+	blue_crystal_color = 0x009DE0
 	
 	CoordMode, Pixel, Window
 	PixelGetColor, bar_color, 12, % offset + 2, RGB
@@ -59,8 +136,10 @@ getSapGuiThemePrefix(winID)
 	. "`r`nbar color is : " . bar_color
 	*/
 	
-	if (bar_color = blue_crystal)
-		return "bluecrystal/"
+	if (bar_color = blue_crystal_color){
+		appendLog("theme is 'blue_crystal'")
+		return "blue_crystal"
+	}
 	
 /*  ;;;;;;;;;;;;;;;
 	Signature Theme
@@ -82,10 +161,12 @@ getSapGuiThemePrefix(winID)
 ;			return "signature/"
 ;	}
 	
-	for i, image in sapgui_theme_images.signature {
+	for i, image in sapgui_elements.window_menu.signature.handles {
 		ImageSearch, , , x1, y1, x2, y2, *10 HBITMAP:*%image%
-		if (!ErrorLevel)
-			return "signature/"
+		if (!ErrorLevel){
+			appendLog("  theme is 'signature'")
+			return "signature"
+		}
 	}
 	
 	
@@ -179,7 +260,7 @@ getClassNNByClass(winID, partialclass, partialtext="")
 	return Results
 }
 
-moveClickRestore(winID, winx, winy, block=True, byref clicked_classnn = ""){
+moveClickRestore(winID, winx, winy, byref clicked_classnn = ""){
 	
 	;get the mouse position so we can restore it later
 	CoordMode, Mouse, Screen
@@ -187,44 +268,95 @@ moveClickRestore(winID, winx, winy, block=True, byref clicked_classnn = ""){
 	
 	CoordMode, Mouse, Window
 	
-	if (block)
-		BlockInput, On
     Click, %winx%, %winy%
 	;sometimes we want to know what was clicked
 	MouseGetPos, , , , classnn
-    BlockInput, Off
 	
 	CoordMode, Mouse, Screen
 	MouseMove, mx, my, 0
 }
 
-findImage(winID, x1, y1, x2, y2, name){
+moveClickDragRestore(x_from, y_from, x_to, y_to){
 	
-	appendLog("findImage(" . x1 . "," . y1 . "," . x2 . "," . y2 . ", " . name . ")")
+	CoordMode, Mouse, Screen
+	MouseGetPos, mx, my
+	
+	CoordMode, Mouse, Window
+	
+	MouseClickDrag, Left, x_from, y_from, x_to, y_to, 0
+	
+	CoordMode, Mouse, Screen
+	MouseMove, mx, my, 0
+}
+
+getGuiElementType(element_name){
+	appendLog("type of '" . element_name . "' = '" . (sapgui_elements[element_name]).etype . "'")
+	return (sapgui_elements[element_name]).etype
+}
+
+locateGuiElement(winID, x1, y1, x2, y2, name){
+/*
+	looks for visual elements from the element library:
+	example:
+	sapgui_elements.tbw_exp_drop.blue_crystal.handles
+*/
+	
+	appendLog("element '" . name . "' search in area " . x1 . "," . y1 . " - " . x2 . "," . y2)
 	
 	coord:={}
 	
 	;we need to know the theme to find the correct button
-	theme_pf:=getSapGuiThemePrefix(winID)
-	
-	image_path := theme_pf . name
-	
-	;check that the image exists:
-	if (FileExist(image_path) = ""){
-		appendLog("'" . image_path . "' not found. Has it been screenshot yet?")
-		ErrorLevel:=2
-		return ""
-	}
+	theme_pf:=getSapGuiTheme(winID)
 	
 	CoordMode, Pixel, Window
-	ImageSearch, bx, by, x1, y1, x2, y2, *50 %image_path%
+	for i, image_handle in sapgui_elements[name][theme_pf].handles {
+		ImageSearch, found_x, found_y, x1, y1, x2, y2, *50 HBITMAP:*%image_handle%
+		
+		if (!ErrorLevel){
+			;found
+			coord.x := found_x, coord.y := found_y
+			appendLog("found element; returning x,y = " . coord.x . "," . coord.y)
+			return coord
+		}
+	}
 	
-	if (ErrorLevel)
-		return ""
+	;not found
+	appendLog("element '" . name . "' not found")
+	ErrorLevel := 1
+	return ""
 	
-	coord.x := bx, coord.y := by
+}
+
+
+locateGuiElementWithinParent(winID, parentcontrol, name){
+/*
+	parentcontrol is obtained from getControlProperties
+*/
+	appendLog("element '" . name . "' search in control '" . parentcontrol.classnn . "'")
 	
-	appendLog("found image; returning x,y:" . coord.x . "," . coord.y)
+	x1 := parentcontrol.x, x2 := parentcontrol.x + parentcontrol.w
+	y1 := parentcontrol.y, y2 := parentcontrol.y + parentcontrol.h
 	
-	return coord
+	coord:={}
+	
+	;we need to know the theme to find the correct button
+	theme_pf:=getSapGuiTheme(winID)
+	
+	CoordMode, Pixel, Window
+	for i, image_handle in sapgui_elements[name][theme_pf].handles {
+		ImageSearch, found_x, found_y, x1, y1, x2, y2, *50 HBITMAP:*%image_handle%
+		
+		if (!ErrorLevel){
+			;found
+			coord.x := found_x, coord.y := found_y
+			appendLog("found element; returning x,y = " . coord.x . "," . coord.y)
+			return coord
+		}
+	}
+	
+	;not found
+	appendLog("element '" . name . "' not found")
+	ErrorLevel := 1
+	return ""
+	
 }

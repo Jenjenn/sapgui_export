@@ -65,6 +65,8 @@ cb_getTableStartEndHeader(byref cb_array, byref start_i_out, byref end_i_out, by
 cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_separator){
 
 /*
+	TODO: Some screens output a space as the thousands separator...
+
 	Assumes:
 	> numbers have a comma or a dot as the decimal separator
 	> numbers are optionally formatted in groups of 3 digits separated by a dot/comma
@@ -75,7 +77,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	the whole data set
 */
 
-	appendLog("starting number format search in cb_detectNumberFormat")
+	appendLog("starting number format search")
 
 /*
 	Because our tables are read row1.col1 -> row1.col2 -> row1.col3 ..... rown.colm
@@ -94,6 +96,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 */
 	static num_needle := "O)(?<=\|) *(\d{1,3}(?:[,.]?\d{3})*(?:[,.]\d++)?+(?:E\+\d+)?) *(?=\|)"
 	
+	;we pull the 1st sub match (match 0 = the whole expression)
 	
 	static format_needle := "O)"
 /*
@@ -102,27 +105,37 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	> look backwards for 3 digits and a comma or period (either)
 	> check the first and second matched subexpression to determine the separators
 	> the first match is always the thousands separator
+	> these are matches 1 and 2
 */
 	. "(?:(?<=(,|\.)\d{3})(,|\.))"
 /*
 	> Find a comma or a period
-	> look behind for one digit
+	> look behind for at least one digit
 	> look ahead and make sure there ISN'T three numbers and a non-number
 	> look ahead for at least one number followed by a non-number
 	> Matches 1.11  and  1.1111   but not  1.111  as this is ambiguous
-	(?<=\d[^,.\d])
+	> this is match 3
 */
 	. "|"
-	. "(?:(?<=\d)(,|\.)(?!\d{3} *$)(?=\d+ *$))"
+	. "(?:(?<=\d)(,|\.)(?!\d{3}$)(?=\d+$))"
+/*
+	> Find a comma or a period
+	> look behind for a zero with no other digits
+	> the comma/period is the decimal separator
+	this is match 4
+*/
+	. "|"
+	. "(?:(?<=^0)(,|\.))"
 /*
 	ANSI exponentials
 	N.NNNNNNE+12   and  N,NNE+15
+	this is match 5
 */
 	. "|"
 	. "(?:(?<=\d)(\.|,)(?=\d*E\+\d+))"
 	
 	;IPv4 addresses can give us a false positive if all octets are three digits
-	ignore_ip_add := "\d{3}\.\d{3}\.\d{3}\.\d{3}"
+	ignore_ip_add := "^\d{3}\.\d{3}\.\d{3}\.\d{3}$"
 	
 	
 	;output variables
@@ -131,6 +144,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	
 	position := 1			;current position in the input string
 	num_count := 0			;count of numbers in the input string
+	static max_nums := 8000 ;a timeout in case the number format search takes too long
 	dot_count := 0			;count of numbers with a dot as the separator
 	comma_count := 0		;count of numbers with a comma as the separator
 	static threshold := 100	;dot_count or comma_count must reach this 
@@ -150,8 +164,10 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 		
 		if (position){
 			
+			;we check for number format against match 1, but add to position based on match 0
+			
 			;found a match, make sure it's not an exception
-			if (RegexMatch(num_mo.0, ignore_ip_add)){
+			if (RegexMatch(num_mo.1, ignore_ip_add)){
 				position += StrLen(num_mo.0)
 				continue
 			}
@@ -159,18 +175,24 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 			;found a valid number
 			num_count++
 			
+			;MsgBox % num_mo.1
+			
 			;found a number, check its format
-			if (RegexMatch(num_mo.0, format_needle, mo)){
+			if (RegexMatch(num_mo.1, format_needle, mo)){
 				ErrorLevel := 0
-				if (mo.1)
+				
+				if (mo.1)			;three digits surrounded by two dots/commas
 					;the thousands separator is always the left one
 					(mo.1 = ",") ? dot_count++ : comma_count++
 				
-				else if (mo.3)
+				else if (mo.3)		;decimal separator followed by {1,2,4,5,...} digits
 					(mo.3 = ".") ? dot_count++ : comma_count++
 				
-				else if (mo.4)
-					(mo.4 = ".") ? dot_count++ : comma_count++
+				else if (mo.4)		;decimal separator preceeded by exactly one zero
+					(mo.3 = ".") ? dot_count++ : comma_count++
+				
+				else if (mo.5)		;exponential
+					(mo.5 = ".") ? dot_count++ : comma_count++
 				
 				/*
 				MsgBox % "position = " . position
@@ -189,10 +211,16 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 			position += StrLen(num_mo.0)
 		}
 		
+		if (num_count > max_nums){
+			appendLog("looked at " . max_nums " numbers, breaking")
+			break
+		}
+		
 	}
 	
 	if (dot_count = comma_count){
 		;inconclusive from the input data
+		appendLog("number format is ambiguous")
 		ErrorLevel := 2
 		return
 	}
@@ -201,11 +229,11 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	thou_separator := dec_separator = "." ? "," : "."
 	
 	runtime := A_TickCount - start_time
-	appendLog(num_count . " numbers processed; decimal separator = '" 
-	. dec_separator . "' in " . runtime . " ms in cb_detectNumberFormat")
+	appendLog(num_count . " numbers processed in " . runtime . " ms; decimal separator = ' "  . dec_separator . " '")
 	
 	;MsgBox % dot_count . ", " . comma_count
-}
+
+}  ;cb_detectNumberFormat
 
 cb_repairWideTable(byref cb_with_newlines){
 /*
@@ -214,7 +242,7 @@ cb_repairWideTable(byref cb_with_newlines){
 	
 	Not completely certain what the max row width is.
 	I think it's 1023, however, a column itself won't be broken, and the max column width is 255
-	Therefore, broken rows will be  [(1023 - 255) = 768] characters long before the break
+	Therefore, broken rows will be at least [(1023 - 255) = 768] characters long before the break
 */
 	
 
@@ -223,10 +251,19 @@ cb_repairWideTable(byref cb_with_newlines){
 	> Look for a newline end with \r\n
 	> Look backwards and check for a column divider '|'
 	> Look forwards something that is not a column divider
+	> Look forwards for something that is not a divider line
 	> Look backwards for a really long line -> increases our confidence the row has been broken
 	> If we found a broken line, include the newline `r`n in the match so it can be removed
 */
-	static needle := "(?<=\|)\r\n(?!\|)(?<=.{768}\r\n)"
+	;static needle := "(?<=\|)\r\n(?!\|)(?<=.{768}\r\n)"
+	static needle := "("
+	. "(?<=\|)\r\n(?!\|)(?!-------)(?<=.{768}\r\n)"
+	. ")|("
+/*
+	Do the same but backwards
+*/
+	. "(?<!\|)(?<!-------)\r\n(?=\|)(?<=.{768}\r\n)"
+	. ")"
 	
 	;time this as it could give us performance problems
 	;but turns out autohotkey is much much faster at this regex than notepad++
@@ -235,8 +272,10 @@ cb_repairWideTable(byref cb_with_newlines){
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "", cnt)
 	
 	runtime := A_TickCount - start_time
-	appendLog("made " . cnt . " replacements in " . runtime . " ms in cb_repairWideTable")
-}
+	appendLog(cnt . " replacements in " . runtime . " ms in cb_repairWideTable")
+
+}  ;cb_repairWideTable
+
 
 cb_repairNewLineInTableCell(byref cb_with_newlines){
 	
@@ -244,7 +283,7 @@ cb_repairNewLineInTableCell(byref cb_with_newlines){
 	;so make the \r quantifier "zero or one"
 	static needle:="(?<!\|)(?<!-------)\r?\n(?!\|)(?!-------)"
 	cb_with_newlines:=RegexReplace(cb_with_newlines, needle, " ", cnt)
-	appendLog("made " . cnt . " replacements in cb_repairNewLineInTableCell")
+	appendLog(cnt . " replacements in cb_repairNewLineInTableCell")
 }
 
 
@@ -256,18 +295,59 @@ cb_removeWhiteSpace(byref cb_with_newlines){
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "|", rep_cnt)
 	
 	runtime := A_TickCount - start_time
-	appendLog("made " . rep_cnt . " replacements in " . runtime . " ms in cb_removeWhiteSpace")
+	appendLog(rep_cnt . " replacements in " . runtime . " ms")
 }
 
 cb_removeLeadingBar(byref cb_with_newlines){
+	
+	start_time := A_TickCount
+
 	static needle:="((?<=\r\n)\|)|(^\|)"
-	cb_with_newlines := RegexReplace(cb_with_newlines, needle)
+	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "", rep_cnt)
+	
+	runtime := A_TickCount - start_time
+	appendLog(rep_cnt . " removals in " . runtime . " ms")
 }
 
 cb_removeHorizontalLines(byref cb_with_newlines){
-	static needle := "-------*-------\r\n"
-	cb_with_newlines := RegexReplace(cb_with_newlines, needle)
+
+	start_time := A_TickCount
 	
+	static needle := "------*-----\r\n"
+	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "", cnt1)
+	
+	static needle2 := "------*-----$"
+	cb_with_newlines := RegexReplace(cb_with_newlines, needle2, "", cnt2)
+	
+	rep_cnt:=cnt1+cnt2
+	
+	runtime := A_TickCount - start_time
+	appendLog(rep_cnt . " removals in " . runtime . " ms")
+	
+}
+
+cb_removeBlankLines(byref cb_with_newlines){
+
+	start_time := A_TickCount
+	
+	static needle1:="\r\n(?=\r\n)"
+	static needle2:="^\r\n"
+	static needle3:="\r\n$"
+	
+	cb_with_newlines := RegExReplace(cb_with_newlines, needle1, "", cnt1)
+	cb_with_newlines := RegExReplace(cb_with_newlines, needle2, "", cnt2)
+	cb_with_newlines := RegExReplace(cb_with_newlines, needle3, "", cnt3)
+	
+	rep_cnt:=cnt1+cnt2+cnt3
+	
+	runtime := A_TickCount - start_time
+	appendLog("made " . rep_cnt . " removals in " . runtime . " ms")
+	
+}
+
+cb_convertDateToNA(byref cb){
+	static needle:="O)(\d\d)\.(\d\d)\.(\d\d\d\d)"
+	cb:=RegExReplace(cb, needle, "$3/$2/$1")
 }
 
 cb_replaceSQLConcat(byref cb){
@@ -278,33 +358,4 @@ cb_replaceSQLConcat(byref cb){
 	static needle:="\|\|"
 	static rep:="++"
 	cb:=RegexReplace(cb, needle, rep)
-}
-
-
-cb_formatSimple(byref cb_with_newlines){
-/*
-	Here we're just going to change the date format, remove the whitespace, and the horizontal bars from the table
-*/
-	
-	
-	cb_array := StrSplit(cb_with_newlines, "`r`n")
-	
-	;cb_getTableStartEnd(cb_array, start_i, end_i)
-	
-	
-	;remove empty lines at the end
-	while (cb_array[cb_array.MaxIndex()] = "")
-		cb_array.pop()
-	
-	for i, line in cb_array{
-		cb_array[i] := RegExreplace(line, " *\| *", "|")
-	}
-	
-	new_str :=
-	for i, line in cb_array{
-		new_str .= line . "`r`n"
-	}
-
-	
-	cb_with_newlines := new_str
 }

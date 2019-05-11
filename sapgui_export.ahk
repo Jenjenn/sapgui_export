@@ -1,32 +1,25 @@
 /*
 	DONE:
-		ALVGrids embedded in the middle of SAP screens
-		ALVGrids as the main content of a screen (using MouseGetPos)
-		ALVGrid embedded in the middle of SAP screens without relying on MouseGetPos (does ControlGetFocus work? Yes!)
-		SAP Signature Theme Support
-		Blue Crystal Theme Support
-		LAN Check by Ping (No longer buggy! I hope!)
-		LAN Check by ping: screen check no longer fails on the "details" screen for manually entered IP address/hostname tests
-		STAD Call subrecord dialog
-		getClassNNByPartial (now getClassNNByClass) needs to return all controls which match the partial name
-		Combine ALVGrid drop down and ALVGrid button functions; filter out exceptions in the main script body
-		click and restore function for moving the mouse to make a physical click then restoring the previous location (while supplying the clicked control)
-		unhide the standard ALV buttons before trying to click the export button
-		function for finding arbitrary buttons in a defined area
-		move specific screen functions to secondary files
+		> Enhanced Logging
+		> Basic sapgui postprocessing
+		> Basic Excel preprocessing
+		> SAPGUI Theme detection solution for when the screen is maximized (for some reason the second monitor starts at coordinates 8,8 ????)
+		> ST12 -> show call hierarchy when turned on
+		
+		> clicking an ALVGrid in a window different from the active window does not immediately make the ALVGrid the focus
+		  this causes the default "system -> list -> save" to trigger. Not intended
+		  WORKAROUND: check the control under the mouse as a backup if the current focus is blank
 	
 	WIP:
-		SAPGUI Theme detection solution for when the screen is maximized (for some reason the second monitor starts at coordinates 8,8 ????)
+		image library to make looking for specific visual elements easier (have to account for theme and character set)
 	
 	TODO:
 		HARD - Oracle: table and index information dialogs (lots of annoying scrolling)
 		MEDIUM - ST13 -> Process Chain runtime Comparison (has 2 grids, top one has no export button T_T )
-		HARD - ST12 -> show call hierarchy when turned on
 		HARD - SQL summary Statement details (screen which shows fastest, slowest, average, calling source locations)
 		
-		> cb_repairNewLineInTableCell is not robust enough, making replacements where it shouldn't
-		> clicking an ALVGrid in a window different from the active window does not immediately make the ALVGrid the focus
-		  this causes the default "system -> list -> save" to trigger. Not intended
+		EVEN POSSIBLE?? Get ahk to work through Remote Desktop connection
+		
 		> ST05 with hidden ALV buttons not supported at the moment. Have to screen cap all of the "show std ALV functions" buttons
 		
 		
@@ -47,18 +40,31 @@
 
 #NoEnv
 
-
 SetDefaultMouseSpeed, 0
 
-/*
-	reducing SetKeyDelay will make the script execute faster, but the trade off is stability
+
+/*	reducing SetKeyDelay will make the script execute faster, but the trade off is stability
 	Most of the time spent waiting is for the server to format the output.
 	There is little to no appreciable gain to changing this.
 */
 ;SetKeyDelay, 10
 
 
+/*	global control for postprocessing SAPGUI output
+	Set this to 0 or false if you don't want output to be modified
+*/
 Global postprocess_sapgui := 1
+Global debug_gdip := 1
+
+#include lib/gdip.ahk
+
+Global gdip_token := Gdip_Startup()
+
+ExitFunc(){
+	Gdip_Shutdown(gdip_token)
+}
+
+OnExit("ExitFunc")
 
 #include lib/logging.ahk
 /*
@@ -107,11 +113,18 @@ Global postprocess_sapgui := 1
 	copySTADcallDialog(winID)
 */
 
+#include lib/tc_st12.ahk
+/*
+	
+*/
+
 
 #include lib/excel.ahk
 /*
 	excel_preProcess()
 */
+
+
 
 
 
@@ -123,7 +136,12 @@ sendSystemListSave(winID=""){
 	;ControlSend, , !y, ahk_id %winID%
 	;ControlSend, #32768, ytai, ahk_id %winID%
 	
-	Send, !ytai
+	
+	;S4 Hana cloud edition changes the shortcut chain from ytai -> ytss
+	;luckily there is no key conflict and we can just add the additional shortcut keys
+	;Send, !ytai
+	Send, !ytaiss
+	
 	waitAndProcessSaveDialog()
 	flushLogAndExit()
 }
@@ -131,6 +149,11 @@ sendSystemListSave(winID=""){
 waitAndProcessSaveDialog(secondsToWait=8)
 {
     WinWait, Save list in file..., , %secondsToWait%
+	
+	if (ErrorLevel){
+		appendLog("'Save list in file...' didn't appear in " . secondsToWait . "seconds, exiting")
+		flushLogAndExit()
+	}
 	
     ;"ControlSend", sadly, doesn't work in this case, the window seems to ignore {Down n}
     ;But control click works fine! (hopefully they never change the layout of this dialog)
@@ -155,9 +178,8 @@ sapgui_postProcess(){
 	cb_repairWideTable(cb)
 	
 	;temporarily ignore needs work
-	;sleep 500
 	;cb_repairNewLineInTableCell(cb)
-	;sleep 500
+	
 	
 	clipboard:=cb
 }
@@ -189,6 +211,14 @@ sapgui_postProcess(){
 		flushLogAndExit()
 	}
 	
+	;fast log off
+	if (WTitle = "Log Off"){
+		appendLog("logging off")
+		CoordMode, Mouse, Window
+		ControlClick, x80 y110, ahk_id %WinID%, , , 2, Pos
+		flushLogAndExit()
+	}
+	
 	;Exception list
 	;these screens don't use ALV grids or the default key combination
 	;Or need some kind of special prep
@@ -200,16 +230,15 @@ sapgui_postProcess(){
 		flushLogAndExit()
 	}
 	;ST12 SQL Summary
-	else if InStr(WTitle, "SQL Summary - "){
+	else if (InStr(WTitle, "SQL Summary - ") || InStr(WTitle, "SQL Summary for Code Location ")){
 		Send, !exl
 		waitAndProcessSaveDialog()
 		flushLogAndExit()
 	}
     ;ST12 trace details
     else if InStr(WTitle, "ABAP Trace Per Call"){
-		Send, !sxl
-		waitAndProcessSaveDialog()
-		flushLogAndExit()
+		st12_copyABAPTraceScreen(winID)
+		
 	}
 	;ST12 - Statistical Records
 	else if InStr(WTitle, "Collected Statistical records for analysis"){
@@ -233,14 +262,22 @@ sapgui_postProcess(){
 	;past exception list, check if we have an ALVGrid in focus
 	ControlGetFocus, cf, ahk_id %winID%
 	
-	appendLog("current focus is '" . cf . "'")
+	appendLog("current focus is control '" . cf . "'")
+	
+	if (cf = ""){
+		appendLog("checking control under the mouse")
+		MouseGetPos, , , , cf
+		appendLog("control under the mouse is '" . cf . "'")
+	}
 	
 	if InStr(cf, "SAPALVGrid"){
 		processALVGrid(winID, cf)
 		if (!ErrorLevel){
+			
 			waitAndProcessSaveDialog()
 			if (postprocess_sapgui){
 				waitForSaveDialogToClose()
+				
 				sapgui_postProcess()
 			}
 		}
@@ -319,25 +356,33 @@ return
 #IfWinActive ahk_exe EXCEL.EXE
 ^q::
 	
-	WinGet, winID, ID, A
+	clearLog()
+	appendLog("starting Excel hotkey")
+	
+	;We don't need the winID here since we can use the COM object
+	;WinGet, winID, ID, A
+	
 	;script must be running at the same privilege level as Excel (i.e. administrator)
 	; https://stackoverflow.com/a/43875164
 	xl := ComObjActive("Excel.Application")
-	cb:=clipboard
-	temp:=cb
 	
+	;copy clipboard and save a second copy to restore it later
+	cb:=clipboard
+	
+	appendLog("preprocessing Excel input")
+	;Excel configuration and preprocessing
 	excel_setSeparators(xl, cb)
 	excel_preProcess(cb)
+	appendLog("preprocessing done")
 	
-	clipboard:=cb
-	ControlSend, , ^v, ahk_id %winID%
-	sleep 500
-	clipboard:=temp
+	;xl.ActiveCell.PasteSpecial
+	excel_paste(xl, cb)
 	
+	
+	flushLogAndExit()
 	
 	return
 ;end of Excel
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -351,11 +396,14 @@ return
 	
 	cb := clipboard
 	
-	;cb_repairWideTable(cb)
-	cb_repairNewLineInTableCell(cb)
+	;cb_detectNumberFormat(cb, ds, ts)
+	cb_repairWideTable(cb)
+	clipboard := cb
 	
-	clipboard:=cb
 	
+	;MsgBox % "ds = '" . ds . "' ts = '" . ts . "'"
+	
+	flushLogAndExit()
 	
 	return
 ;end of Notepad++
@@ -364,11 +412,14 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; BCP                 ;
 ;;;;;;;;;;;;;;;;;;;;;;;
-/*
-#IfWinActive ahk_exe chrome.exe
-^`::
-
-
+#If WinActive("ahk_exe chrome.exe") && ( WinActive("Incident") || WinActive("Chat Incident"))
+^q::
+	
+	;paste the clipboard but with non-breaking spaces instead of regular spaces
+	nbsp:=Chr(0x00A0)
+	clipboard:=StrReplace(clipboard, " ", nbsp)
+	
+	Send ^v
 
 return
-*/
+

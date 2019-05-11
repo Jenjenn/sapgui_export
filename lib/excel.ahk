@@ -13,12 +13,45 @@ excel_setSeparators(byref xl, byref cb){
 	xl.ThousandsSeparator := tsep
 }
 
-; excel_paste(excel_win_id, byref cb){
-	; temp:=clipboard
-	; clipboard:=cb
-	; ControlSend
-	; clipboard:=temp
-; }
+excel_paste(byref xl, byref cb){
+/*
+	puts cb into the clipboard and executes a paste
+	then restores the previous contents of the clipboard
+	
+	For some reason the paste will fail unexplicably...
+	I wonder if certain COM properties are not available
+	right away after the last COM command
+	
+	Anyway, this seems to work for now
+*/
+	appendLog("attempt excel paste")
+	
+	static max_attempts:=10
+	
+	temp:=clipboard
+	clipboard:=cb
+	i:=0
+	while (i < max_attempts){
+		try{
+			
+			;do a COM paste, it's synchronous so we don't have to do any waiting/sleeping
+			xl.ActiveCell.PasteSpecial
+			clipboard:=temp
+			appendLog("paste successful")
+			return
+			
+		} catch e {
+			i++
+			appendLog("attempt " . i . " failed")
+			sleep 20
+			if (i >= 10){
+				clipboard:=temp
+				throw e
+			}
+		}
+	}
+	
+}
 
 excel_preProcess(byref cb){
 	
@@ -28,7 +61,10 @@ excel_preProcess(byref cb){
 	;even better is to the use the header line to determine the 
 	;positions of the table bars and replace them specifically
 	cb_replaceSQLConcat(cb)
+	
 	cb_removeWhiteSpace(cb)
 	cb_removeLeadingBar(cb)
+	cb_removeBlankLines(cb)
+	cb_convertDateToNA(cb)
 	
 }
