@@ -1,9 +1,9 @@
-;Global alvgrid_export_images:={}
+;Global alvgrid_export_images := {}
 
-;alvgrid_export_images.at:=[]
+;alvgrid_export_images.at := []
 
-;alvgrid_export_images.at[1]:={}
-;alvgrid_export_images.at[1].ihandle:=LoadPicture("signature/western_menu_inverted.png")
+;alvgrid_export_images.at[1] := {}
+;alvgrid_export_images.at[1].ihandle := LoadPicture("signature/western_menu_inverted.png")
 
 
 findExport(winID, parentclass, byref type_found=""){
@@ -20,7 +20,7 @@ findExport(winID, parentclass, byref type_found=""){
 	
 	;construct the filenames
 	;TODO : preload/cache the images in the helpers.ahk file
-	elements:=[]
+	elements := []
 	
 	
 	if (InStr(parentclass.classnn, "ToolbarWindow")){
@@ -36,14 +36,14 @@ findExport(winID, parentclass, byref type_found=""){
 		xy := locateGuiElementWithinParent(winID, parentclass, elem)
 		if (!ErrorLevel){
 			;found
-			type_found:=getGuiElementType(elem)
+			type_found := getGuiElementType(elem)
 			appendLog("export of type '" . type_found . "' at x,y:" . xy.x . "," . xy.y)
 			return xy
 		}
 	}
 	
 	;not found
-	ErrorLevel:=1
+	ErrorLevel := 1
 	appendLog("no export found")
 	return ""
 }
@@ -100,38 +100,38 @@ getToolbarWindowForALVGrid(winID, alvgridnn){
 	
 	;no toolbar found, set error level and return
 	if (toolbar_windows.Length() = 0){
-		ErrorLevel:=1
+		ErrorLevel := 1
 		return
 	}
 	
 	;exactly one toolbar is found
 	if (toolbar_windows.Length() = 1){
-		ErrorLevel:=0
+		ErrorLevel := 0
 		return toolbar_windows[1]
 	}
 	
 	;multiple, determine the most appropriate choice based on distance
 	;get the distance between the top-left corners of the grid and the first toolbar
 	
-	d1:=getDistanceBetweenTwoControls(winId, alvgridnn, toolbar_windows[1])
-	closest:=toolbar_windows[1]
+	d1 := getDistanceBetweenTwoControls(winId, alvgridnn, toolbar_windows[1])
+	closest := toolbar_windows[1]
 	
-	i:=2
+	i := 2
 	appendLog("'" . toolbar_windows[1] . "' is " . d1 . " units away")
 	while (i <= toolbar_windows.length()){
-		d2:=getDistanceBetweenTwoControls(winId, alvgridnn, toolbar_windows[i])
+		d2 := getDistanceBetweenTwoControls(winId, alvgridnn, toolbar_windows[i])
 		appendLog("'" . toolbar_windows[i] . "' is " . d2 . " units away")
 		
 		if (d2 < d1){
-			closest:=toolbar_windows[i]
-			d1:=d2
+			closest := toolbar_windows[i]
+			d1 := d2
 		}
 		i++
 	}
 	
 	appendLog("returning '" . closest . "'")
 	
-	ErrorLevel:=0
+	ErrorLevel := 0
 	return closest
 	
 }
@@ -148,8 +148,8 @@ unhideStandardALVToolbar(winID, alv_toolbarnn)
 	
 	;TEMPORARILY DISABLED
 	;coord := findImage(winID, tx, ty, tx2, ty2, "show_std_alv.png")
-	ErrorLevel:=1
-	;TEMPORARILY DISABLED
+	ErrorLevel := 1
+	;/TEMPORARILY DISABLED
 	
 	;if we didn't find un unhide button, either 
 	;it's not there or it's already been expanded

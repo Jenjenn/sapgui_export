@@ -33,7 +33,7 @@ st12_findEdgeDown(byref pbm, x, y, num_checks, byref y_edge){
 	} 
 	
 	if (y >= max_y){
-		ErrorLevel:=1
+		ErrorLevel := 1
 		return
 	}
 	
@@ -60,7 +60,7 @@ st12_findEdgeRight(byref pbm, x, y, num_checks, byref x_edge){
 	} 
 	
 	if (x >= max_x){
-		ErrorLevel:=1
+		ErrorLevel := 1
 		return
 	}
 	
@@ -77,7 +77,7 @@ st12_findCallStackArea(byref pbm, alvx, alvy, byref stack_left, byref stack_righ
 	static stack_area_color = 0xfff8e5c8
 	static sy_offset := 30
 	
-	search_x:=alvx + 100, search_y:=alvy + 30
+	search_x := alvx + 100, search_y := alvy + 30
 	
 	appendLog("looking for the call stack area right of x=" . search_x . " and at y=" . search_y)
 	
@@ -122,7 +122,7 @@ st12_copyByALVHeader(win_id, start_x, end_x, y){
 	
 	moveClickDragRestore(start_x, y, end_x, y)
 	
-	clipboard:=
+	clipboard :=
 	
 	;Send {Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}
 	Send {Ctrl Down}c{Ctrl Up}
@@ -158,6 +158,9 @@ st12_processCallStackOutput(byref call_stacks){
 
 st12_copyCallStack(win_id){
 	
+	/* TODO: name of the ALVGrid in ST12 is not always SAPALVGrid2
+		change this to a generic SAPALVGrid control by detecting the main control in the window
+	*/
 	static alv_name := "SAPALVGrid2"
 	
 	alvgrid := getControlProperties(win_id, alv_name)
@@ -173,6 +176,8 @@ st12_copyCallStack(win_id){
 		appendLog("saving gdip bmp to file")
 		Gdip_SaveBitmapToFile(pbm, "debug_st12_copyCallStack.png")
 	}
+	
+	
 	
 	st12_findCallStackArea(pbm, alvgrid.x, alvgrid.y, stack_start, stack_end)
 	
@@ -217,7 +222,7 @@ st12_callStackEnabled(win_id){
 	locateGuiElementWithinParent(win_id, t, "at_stkoff_btn")
 	
 	if (ErrorLevel){
-		ErrorLevel:=0
+		ErrorLevel := 0
 		appendLog("call stack not enabled")
 		return false
 	}
@@ -240,7 +245,7 @@ st12_copyABAPTraceScreen(win_id){
 		}
 	}
 	
-	clipboard:=
+	clipboard :=
 	;get the regular output
 	Send, !sxl
 	waitAndProcessSaveDialog()

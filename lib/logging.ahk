@@ -3,15 +3,15 @@
 ;for the time being use flushLogAndExit instead of just exit
 ;OnExit("flushLogOnExit", -1)
 
-Global exec_log:=
-Global script_start:=
+Global exec_log :=
+Global script_start :=
 
 clearLog(){
-	global exec_log:="log cleared at " . A_Now . "`r`n"
-	global script_start:=A_TickCount
+	global exec_log := "log cleared at " . A_Now . "`r`n"
+	global script_start := A_TickCount
 }
 
-appendLog(mes, stack_offset:=-1){
+appendLog(mes, stack_offset := -1){
 /*
 	Format is:
 	nnnn ms : file : line : message   (executing function)
@@ -20,16 +20,16 @@ appendLog(mes, stack_offset:=-1){
 	caller := Exception(".", stack_offset - 1)
 	
 	;indent formatting based on stack level
-	i:=-1
+	i := -1
 	e := Exception(".", i)
 	
 	while (e.What != i){
 		i--
-		e:=Exception(".", i)
+		e := Exception(".", i)
 	}
 	
 	depth:= (-1 * i) - 2
-	offset:=""
+	offset := ""
 	while (depth > 1){
 		offset .= "  "
 		depth--
@@ -40,7 +40,7 @@ appendLog(mes, stack_offset:=-1){
 	
 	diff := A_TickCount - script_start
 	
-	loglinepre:=Format("{:5} ms : {:-18}:{:-4} : {}{}   ({})"
+	loglinepre := Format("{:5} ms : {:-18}:{:-4} : {}{}   ({})"
 	, diff, fname, logger.line, offset, mes, caller.what)
 	
 	global exec_log .= loglinepre . "`r`n"
@@ -50,7 +50,7 @@ flushLog(){
 	appendLog("flush called by ===>", -2)
 	
 	FileAppend, %exec_log%, log.txt, UTF-8
-	global exec_log:=""
+	global exec_log := ""
 	;MsgBox % A_WorkingDir
 }
 

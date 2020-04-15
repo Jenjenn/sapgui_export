@@ -2,7 +2,10 @@ excel_setSeparators(byref xl, byref cb){
 
 	cb_detectNumberFormat(cb, dsep, tsep)
 	
-	;Do not use the system separators, set it myself
+	if (ErrorLevel){
+		TrayTip, Set Excel Separators, Couldn't detect the number separator from the clipboard data. Ensure the Excel separators are set accordingly., 10, 18
+	}
+	
 	xl.UseSystemSeparators := 0
 	
 	; xlDecimalSeparator = 3
@@ -26,17 +29,17 @@ excel_paste(byref xl, byref cb){
 */
 	appendLog("attempt excel paste")
 	
-	static max_attempts:=10
+	static max_attempts := 10
 	
-	temp:=clipboard
-	clipboard:=cb
-	i:=0
+	temp := clipboard
+	clipboard := cb
+	i := 0
 	while (i < max_attempts){
 		try{
 			
 			;do a COM paste, it's synchronous so we don't have to do any waiting/sleeping
 			xl.ActiveCell.PasteSpecial
-			clipboard:=temp
+			clipboard := temp
 			appendLog("paste successful")
 			return
 			
@@ -45,7 +48,7 @@ excel_paste(byref xl, byref cb){
 			appendLog("attempt " . i . " failed")
 			sleep 20
 			if (i >= 10){
-				clipboard:=temp
+				clipboard := temp
 				throw e
 			}
 		}

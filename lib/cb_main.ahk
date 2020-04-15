@@ -13,12 +13,12 @@ cb_removeInitialHeader(byref cb_with_newlines){
 		Then remove it here
 	*/
 	
-	static needle:="^.*Dynamic List Display *\d\r\n-------*\r\n"
+	static needle := "^.*Dynamic List Display *\d\r\n-------*\r\n"
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "", 1)
 }
 
 cb_removeTrailingPage(byref cb_with_newlines){
-	static needle:="\r\nPage: *\d*$"
+	static needle := "\r\nPage: *\d*$"
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle)
 }
 
@@ -147,8 +147,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	static max_nums := 8000 ;a timeout in case the number format search takes too long
 	dot_count := 0			;count of numbers with a dot as the separator
 	comma_count := 0		;count of numbers with a comma as the separator
-	static threshold := 100	;dot_count or comma_count must reach this 
-							;value to be considered the winner
+	static threshold := 100	;dot_count or comma_count must reach this value to be considered the winner
 	
 	start_time := A_TickCount
 	
@@ -189,7 +188,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 					(mo.3 = ".") ? dot_count++ : comma_count++
 				
 				else if (mo.4)		;decimal separator preceeded by exactly one zero
-					(mo.3 = ".") ? dot_count++ : comma_count++
+					(mo.4 = ".") ? dot_count++ : comma_count++
 				
 				else if (mo.5)		;exponential
 					(mo.5 = ".") ? dot_count++ : comma_count++
@@ -219,7 +218,6 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	}
 	
 	if (dot_count = comma_count){
-		;inconclusive from the input data
 		appendLog("number format is ambiguous")
 		ErrorLevel := 2
 		return
@@ -265,8 +263,6 @@ cb_repairWideTable(byref cb_with_newlines){
 	. "(?<!\|)(?<!-------)\r\n(?=\|)(?<=.{768}\r\n)"
 	. ")"
 	
-	;time this as it could give us performance problems
-	;but turns out autohotkey is much much faster at this regex than notepad++
 	start_time := A_TickCount
 	
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "", cnt)
@@ -281,14 +277,14 @@ cb_repairNewLineInTableCell(byref cb_with_newlines){
 	
 	;some of the cell contents use UNIX line endings (i.e. only \n)
 	;so make the \r quantifier "zero or one"
-	static needle:="(?<!\|)(?<!-------)\r?\n(?!\|)(?!-------)"
-	cb_with_newlines:=RegexReplace(cb_with_newlines, needle, " ", cnt)
+	static needle := "(?<!\|)(?<!-------)\r?\n(?!\|)(?!-------)"
+	cb_with_newlines := RegexReplace(cb_with_newlines, needle, " ", cnt)
 	appendLog(cnt . " replacements in cb_repairNewLineInTableCell")
 }
 
 
 cb_removeWhiteSpace(byref cb_with_newlines){
-	static needle:=" *\| *"
+	static needle := " *\| *"
 	
 	start_time := A_TickCount
 	
@@ -302,7 +298,7 @@ cb_removeLeadingBar(byref cb_with_newlines){
 	
 	start_time := A_TickCount
 
-	static needle:="((?<=\r\n)\|)|(^\|)"
+	static needle := "((?<=\r\n)\|)|(^\|)"
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "", rep_cnt)
 	
 	runtime := A_TickCount - start_time
@@ -319,7 +315,7 @@ cb_removeHorizontalLines(byref cb_with_newlines){
 	static needle2 := "------*-----$"
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle2, "", cnt2)
 	
-	rep_cnt:=cnt1+cnt2
+	rep_cnt := cnt1 + cnt2
 	
 	runtime := A_TickCount - start_time
 	appendLog(rep_cnt . " removals in " . runtime . " ms")
@@ -330,15 +326,15 @@ cb_removeBlankLines(byref cb_with_newlines){
 
 	start_time := A_TickCount
 	
-	static needle1:="\r\n(?=\r\n)"
-	static needle2:="^\r\n"
-	static needle3:="\r\n$"
+	static needle1 := "\r\n(?=\r\n)"
+	static needle2 := "^\r\n"
+	static needle3 := "\r\n$"
 	
 	cb_with_newlines := RegExReplace(cb_with_newlines, needle1, "", cnt1)
 	cb_with_newlines := RegExReplace(cb_with_newlines, needle2, "", cnt2)
 	cb_with_newlines := RegExReplace(cb_with_newlines, needle3, "", cnt3)
 	
-	rep_cnt:=cnt1+cnt2+cnt3
+	rep_cnt := cnt1 + cnt2 + cnt3
 	
 	runtime := A_TickCount - start_time
 	appendLog("made " . rep_cnt . " removals in " . runtime . " ms")
@@ -346,8 +342,8 @@ cb_removeBlankLines(byref cb_with_newlines){
 }
 
 cb_convertDateToNA(byref cb){
-	static needle:="O)(\d\d)\.(\d\d)\.(\d\d\d\d)"
-	cb:=RegExReplace(cb, needle, "$3/$2/$1")
+	static needle := "(\d\d)\.(\d\d)\.(\d\d\d\d)"
+	cb := RegExReplace(cb, needle, "$3/$2/$1")
 }
 
 cb_replaceSQLConcat(byref cb){
@@ -355,7 +351,11 @@ cb_replaceSQLConcat(byref cb){
 	SQL cache ouput may contain strings with concat operators -> ||
 	this messes with Excel's delimiting
 */
-	static needle:="\|\|"
-	static rep:="++"
-	cb:=RegexReplace(cb, needle, rep)
+	static needle := "\|\|"
+	static rep := "++"
+	cb := RegexReplace(cb, needle, rep)
+}
+
+cb_replaceCharAtPos(byref cb, position, newchar){
+	cb := RegexReplace(cb, ".", newchar, 0, 1, position)
 }

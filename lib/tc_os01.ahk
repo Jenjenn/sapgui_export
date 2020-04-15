@@ -45,7 +45,7 @@ copyLanCheckScreenDetails(winID)
 	
 	
 	;Get the header text
-	header_classnn:=getClassNNByClass(winID, "Internet Explorer_Server")[1]
+	header_classnn := getClassNNByClass(winID, "Internet Explorer_Server")[1]
 	
 	;put focus on the header area
 	;ControlFocus acts really weird here; SAPGUI doesn't know how to handle it properly
@@ -54,12 +54,12 @@ copyLanCheckScreenDetails(winID)
 	Send, {Ctrl Down}ac{Ctrl Up}
 	
 	;save to clipboard and get rid of some whitespace
-	output:=ClipBoard
-	output:=StrReplace(output, "`r`n")
-	output:=RegExReplace(output, " {1,}", " ")
+	output := ClipBoard
+	output := StrReplace(output, "`r`n")
+	output := RegExReplace(output, " {1,}", " ")
 	
 	;get the body text
-	body_classnn:=getClassNNByClass(winID, "SAPALVGrid")[1]
+	body_classnn := getClassNNByClass(winID, "SAPALVGrid")[1]
 	ControlFocus, %body_classnn%, ahk_id %winID%
 	
 	;Send, {Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}
@@ -68,7 +68,7 @@ copyLanCheckScreenDetails(winID)
 
 	output=%output%`r`n`r`n%ClipBoard%
 	
-	Clipboard:=output
+	Clipboard := output
 	
 	
 }
@@ -83,7 +83,7 @@ copyLanCheckScreen(winID)
 	appendLog("entering copyLanCheckScreen")
 	
 	;we have to find out which screen we're on, the titles are the same for the most part
-	os01_screen:=whichLanCheckScreen(winID)
+	os01_screen := whichLanCheckScreen(winID)
 	
 	appendLog("I think I'm on screen %os01_screen%")
 	

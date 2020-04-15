@@ -36,73 +36,74 @@
 
 
 ;preload the visual elements of SAPGUI
-Global sapgui_elements:={}
+Global sapgui_elements := {}
 	
 	;the top left menu of the SAPGUI window, used in theme detection
-	sapgui_elements.window_menu:={}
-	sapgui_elements.window_menu.signature:={ handles:[] }
-	sapgui_elements.window_menu.signature.handles[1]:=LoadPicture("signature/western_menu.png")
-	sapgui_elements.window_menu.signature.handles[2]:=LoadPicture("signature/western_menu_inverted.png")
-	sapgui_elements.window_menu.signature.handles[3]:=LoadPicture("signature/eastern_menu.png")
-	sapgui_elements.window_menu.signature.handles[4]:=LoadPicture("signature/eastern_menu_inverted.png")
+	sapgui_elements.window_menu := {}
+	sapgui_elements.window_menu.signature := { handles:[] }
+	sapgui_elements.window_menu.signature.handles[1] := LoadPicture("signature/western_menu.png")
+	sapgui_elements.window_menu.signature.handles[2] := LoadPicture("signature/western_menu_inverted.png")
+	sapgui_elements.window_menu.signature.handles[3] := LoadPicture("signature/eastern_menu.png")
+	sapgui_elements.window_menu.signature.handles[4] := LoadPicture("signature/eastern_menu_inverted.png")
 	
 	
 	;the export button which appears in ToolbarWindow controls
-	;sapgui_elements.tbw_exp_drop:={ etype:"dd_button" }
-	sapgui_elements.tbw_exp_drop:={}
+	;sapgui_elements.tbw_exp_drop := { etype:"dd_button" }
+	sapgui_elements.tbw_exp_drop := {}
 	
-		sapgui_elements.tbw_exp_drop.etype:="dd_button" 
+		sapgui_elements.tbw_exp_drop.etype := "dd_button" 
 	
-		sapgui_elements.tbw_exp_drop.blue_crystal:={ handles:[] }
-		sapgui_elements.tbw_exp_drop.blue_crystal.handles[1]:=LoadPicture("blue_crystal/western_tbw_drop.png")
-		sapgui_elements.tbw_exp_drop.blue_crystal.handles[2]:=LoadPicture("blue_crystal/eastern_tbw_drop.png")
+		sapgui_elements.tbw_exp_drop.blue_crystal := { handles:[] }
+		sapgui_elements.tbw_exp_drop.blue_crystal.handles[1] := LoadPicture("blue_crystal/western_tbw_drop.png")
+		sapgui_elements.tbw_exp_drop.blue_crystal.handles[2] := LoadPicture("blue_crystal/eastern_tbw_drop.png")
 	
-		sapgui_elements.tbw_exp_drop.signature:={ handles:[] }
-		sapgui_elements.tbw_exp_drop.signature.handles[1]:=LoadPicture("signature/western_tbw_drop.png")
-		sapgui_elements.tbw_exp_drop.signature.handles[2]:=LoadPicture("signature/eastern_tbw_drop.png")
+		sapgui_elements.tbw_exp_drop.signature := { handles:[] }
+		sapgui_elements.tbw_exp_drop.signature.handles[1] := LoadPicture("signature/western_tbw_drop.png")
+		sapgui_elements.tbw_exp_drop.signature.handles[2] := LoadPicture("signature/eastern_tbw_drop.png")
 		
 		;put new themes here
 		
 	
 	;the export drop down button which appears in ToolbarWindow controls
-	sapgui_elements.tbw_exp_btn:={ etype:"button" }
+	sapgui_elements.tbw_exp_btn := { etype:"button" }
 	
-		sapgui_elements.tbw_exp_btn.blue_crystal:={ handles:[] }
-		sapgui_elements.tbw_exp_btn.blue_crystal.handles[1]:=LoadPicture("blue_crystal/western_tbw_button.png")
-		sapgui_elements.tbw_exp_btn.blue_crystal.handles[2]:=LoadPicture("blue_crystal/eastern_tbw_button.png")
+		sapgui_elements.tbw_exp_btn.blue_crystal := { handles:[] }
+		sapgui_elements.tbw_exp_btn.blue_crystal.handles[1] := LoadPicture("blue_crystal/western_tbw_button.png")
+		sapgui_elements.tbw_exp_btn.blue_crystal.handles[2] := LoadPicture("blue_crystal/eastern_tbw_button.png")
 		
-		sapgui_elements.tbw_exp_btn.signature:={ handles:[] }
-		sapgui_elements.tbw_exp_btn.signature.handles[1]:=LoadPicture("signature/western_tbw_button.png")
-		sapgui_elements.tbw_exp_btn.signature.handles[2]:=LoadPicture("signature/eastern_tbw_button.png")
+		sapgui_elements.tbw_exp_btn.signature := { handles:[] }
+		sapgui_elements.tbw_exp_btn.signature.handles[1] := LoadPicture("signature/western_tbw_button.png")
+		sapgui_elements.tbw_exp_btn.signature.handles[2] := LoadPicture("signature/eastern_tbw_button.png")
 		
 		;put new themes here
 		
 	
 	;the export button which appears in ApplicationToolbar controls
-	sapgui_elements.at_exp_btn:={ etype:"button" }
+	sapgui_elements.at_exp_btn := { etype:"button" }
 	
-		sapgui_elements.at_exp_btn.blue_crystal:={ handles:[] }
-		sapgui_elements.at_exp_btn.blue_crystal.handles[1]:=LoadPicture("blue_crystal/western_at_button.png")
-		sapgui_elements.at_exp_btn.blue_crystal.handles[2]:=LoadPicture("blue_crystal/eastern_at_button.png")
+		sapgui_elements.at_exp_btn.blue_crystal := { handles:[] }
+		sapgui_elements.at_exp_btn.blue_crystal.handles[1] := LoadPicture("blue_crystal/western_at_button.png")
+		sapgui_elements.at_exp_btn.blue_crystal.handles[2] := LoadPicture("blue_crystal/eastern_at_button.png")
 		
-		sapgui_elements.at_exp_btn.signature:={ handles:[] }
-		sapgui_elements.at_exp_btn.signature.handles[1]:=LoadPicture("signature/western_at_button.png")
-		sapgui_elements.at_exp_btn.signature.handles[2]:=LoadPicture("signature/eastern_at_button.png")
+		sapgui_elements.at_exp_btn.signature := { handles:[] }
+		sapgui_elements.at_exp_btn.signature.handles[1] := LoadPicture("signature/western_at_button.png")
+		sapgui_elements.at_exp_btn.signature.handles[2] := LoadPicture("signature/eastern_at_button.png")
 		
 		;put new themes here
 		
 	
 	;the button that turns off the call stack in ST12
-	sapgui_elements.at_stkoff_btn:={ etype:"button" }
+	;TODO : this button is only for the bottom-up call hierarchy button, not the Top-down hierarchy button
+	sapgui_elements.at_stkoff_btn := { etype:"button" }
 	
 		sapgui_elements.at_stkoff_btn.blue_crystal:= { handles:[] }
-		sapgui_elements.at_stkoff_btn.blue_crystal.handles[1]:=LoadPicture("blue_crystal/western_at_stkoff_button.png")
-		sapgui_elements.at_stkoff_btn.blue_crystal.handles[2]:=LoadPicture("blue_crystal/eastern_at_stkoff_button.png")
+		sapgui_elements.at_stkoff_btn.blue_crystal.handles[1] := LoadPicture("blue_crystal/western_at_stkoff_button.png")
+		sapgui_elements.at_stkoff_btn.blue_crystal.handles[2] := LoadPicture("blue_crystal/eastern_at_stkoff_button.png")
 		
 		;NOT YET IMPLEMENTED
 		sapgui_elements.at_stkoff_btn.signature:= { handles:[] }
-		sapgui_elements.at_stkoff_btn.signature.handles[1]:=LoadPicture("signature/western_at_stkoff_button.png")
-		sapgui_elements.at_stkoff_btn.signature.handles[2]:=LoadPicture("signature/eastern_at_stkoff_button.png")
+		sapgui_elements.at_stkoff_btn.signature.handles[1] := LoadPicture("signature/western_at_stkoff_button.png")
+		sapgui_elements.at_stkoff_btn.signature.handles[2] := LoadPicture("signature/eastern_at_stkoff_button.png")
 	
 		;put new themes here
 	
@@ -149,10 +150,10 @@ getSapGuiTheme(winID)
 	; search the upper left for the window menu buttons
 	WinGetPos, , , xw, , ahk_id %winID%
 	
-	x1:=offset
-	y1:=offset
-	x2:=50 + offset
-	y2:=50 + offset
+	x1 := offset
+	y1 := offset
+	x2 := 50 + offset
+	y2 := 50 + offset
 	
 	CoordMode, Pixel, Window
 ;	for i, image in sapgui_signature_theme_images {
@@ -226,7 +227,7 @@ getClassNNByClass(winID, partialclass, partialtext="")
 	WinGet, controls, ControlList, ahk_id %winID%
 	;MsgBox %controls%
 	
-	Results:=Array()
+	Results := Array()
 	
 	Loop, Parse, controls, `n
 	{
@@ -303,10 +304,10 @@ locateGuiElement(winID, x1, y1, x2, y2, name){
 	
 	appendLog("element '" . name . "' search in area " . x1 . "," . y1 . " - " . x2 . "," . y2)
 	
-	coord:={}
+	coord := {}
 	
 	;we need to know the theme to find the correct button
-	theme_pf:=getSapGuiTheme(winID)
+	theme_pf := getSapGuiTheme(winID)
 	
 	CoordMode, Pixel, Window
 	for i, image_handle in sapgui_elements[name][theme_pf].handles {
@@ -337,10 +338,12 @@ locateGuiElementWithinParent(winID, parentcontrol, name){
 	x1 := parentcontrol.x, x2 := parentcontrol.x + parentcontrol.w
 	y1 := parentcontrol.y, y2 := parentcontrol.y + parentcontrol.h
 	
-	coord:={}
+	appendLog("top left: " . x1 . "," . y1 "   bottom right: " . x2 . "," . y2)
+	
+	coord := {}
 	
 	;we need to know the theme to find the correct button
-	theme_pf:=getSapGuiTheme(winID)
+	theme_pf := getSapGuiTheme(winID)
 	
 	CoordMode, Pixel, Window
 	for i, image_handle in sapgui_elements[name][theme_pf].handles {
@@ -359,4 +362,12 @@ locateGuiElementWithinParent(winID, parentcontrol, name){
 	ErrorLevel := 1
 	return ""
 	
+}
+
+
+Join(arr, s){
+	;static _ := Array.Join := Func("Join")
+	for k,v in arr
+	o.= s . v
+	return SubStr(o,StrLen(s)+1)
 }

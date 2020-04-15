@@ -16,7 +16,9 @@
 	TODO:
 		HARD - Oracle: table and index information dialogs (lots of annoying scrolling)
 		MEDIUM - ST13 -> Process Chain runtime Comparison (has 2 grids, top one has no export button T_T )
+		MEDIUM - ST12 -> the name of the ALVGrid in ST12 is not always SAPALVGrid2 -> make this generic
 		HARD - SQL summary Statement details (screen which shows fastest, slowest, average, calling source locations)
+		EASY - STAD: add pipes/bars ('|') to the fields separated by only spaces.
 		
 		EVEN POSSIBLE?? Get ahk to work through Remote Desktop connection
 		
@@ -42,6 +44,7 @@
 
 SetDefaultMouseSpeed, 0
 
+#MaxMem 128
 
 /*	reducing SetKeyDelay will make the script execute faster, but the trade off is stability
 	Most of the time spent waiting is for the server to format the output.
@@ -69,7 +72,7 @@ OnExit("ExitFunc")
 #include lib/logging.ahk
 /*
 	clearLog()
-	appendLog(mes)
+	appendLog(message)
 */
 
 
@@ -146,7 +149,7 @@ sendSystemListSave(winID=""){
 	flushLogAndExit()
 }
 
-waitAndProcessSaveDialog(secondsToWait=8)
+waitAndProcessSaveDialog(secondsToWait=20)
 {
     WinWait, Save list in file..., , %secondsToWait%
 	
@@ -155,12 +158,15 @@ waitAndProcessSaveDialog(secondsToWait=8)
 		flushLogAndExit()
 	}
 	
-    ;"ControlSend", sadly, doesn't work in this case, the window seems to ignore {Down n}
-    ;But control click works fine! (hopefully they never change the layout of this dialog)
+    ;"ControlSend", sadly, doesn't work on the window in this case
+	appendLog("Clicking 'In the clipboard'")
     ControlClick, x25 y220, Save list in file...,,,, Pos
+	;on older releases, the spacing is different and clicking in a specific position doesn't work
+	
+	;testing to see if the classNN of the control ever changes...
+	;ControlSend, Afx:0FA00000:b1, {Up}
 	;doesn't always work unless we sleep for a bit
 	Sleep, 15
-    ;ControlClick, x210 y255, Save list in file...,,,, Pos
 	ControlSend, , {Enter}, Save list in file...
 }
 
@@ -170,7 +176,7 @@ waitForSaveDialogToClose(){
 
 sapgui_postProcess(){
 	
-	cb:=clipboard
+	cb := clipboard
 	
 	cb_removeInitialHeader(cb)
 	cb_removeTrailingPage(cb)
@@ -181,7 +187,7 @@ sapgui_postProcess(){
 	;cb_repairNewLineInTableCell(cb)
 	
 	
-	clipboard:=cb
+	clipboard := cb
 }
 
 
@@ -198,8 +204,9 @@ sapgui_postProcess(){
 	
 	;don't do anything if it's just the Logon window
 	if InStr(WTitle, "SAP Logon")
-	
-	flushLogAndExit()
+	{
+		flushLogAndExit()
+	}
 	
 	clearLog()
 	appendLog("checking exception list")
@@ -251,10 +258,14 @@ sapgui_postProcess(){
 		copyLanCheckScreen(winID)
 		flushLogAndExit()
 	}
+	;STAD main result screen
+	else if InStr(WTitle, "SAP Workload: Single Statistical Records - Overview"){
+		STAD.copyrecordsOverview(winID)
+	}
 	;STAD RFC subrecord dialog
 	else if (InStr(WTitle, "RFC: ") = 1) AND InStr(WTitle, "Records")
 	     OR (InStr(WTitle, "HTTP: ") = 1) AND InStr(WTitle, "Records"){
-		copySTADcallDialog(winID)
+		STAD.copyCallDialog(winID)
 	}
 	
 	appendLog("past exception list")
@@ -311,14 +322,14 @@ showGridsAndToolbars(){
 
 	WinGet, winID, ID, A
 
-	alvgrids:=getClassNNByClass(winID, "SAPALVGrid")
+	alvgrids := getClassNNByClass(winID, "SAPALVGrid")
 
-	toolbar_window:=getToolbarWindowForALVGrid(winID, "null")
+	toolbar_window := getToolbarWindowForALVGrid(winID, "null")
 
-	str:="grids: "
-	grid:=""
+	str := "grids: "
+	grid := ""
 		For Index, Value in alvgrids {
-			grid:=getControlProperties(winID, Value)
+			grid := getControlProperties(winID, Value)
 			str .= Value . "," . grid.x . "," . grid.y . "," . grid.w . "," . grid.y . ";"
 		}
 
@@ -340,7 +351,7 @@ KeyWait, Alt
 
 	;processALVGrid(winID, "SAPALVGrid1")
 
-	;prefix:=getSapGuiThemePrefix(winID)
+	;prefix := getSapGuiThemePrefix(winID)
 	
 	;MsgBox % test
 
@@ -367,7 +378,7 @@ return
 	xl := ComObjActive("Excel.Application")
 	
 	;copy clipboard and save a second copy to restore it later
-	cb:=clipboard
+	cb := clipboard
 	
 	appendLog("preprocessing Excel input")
 	;Excel configuration and preprocessing
@@ -395,12 +406,12 @@ return
 	clearLog()
 	
 	cb := clipboard
-	
-	;cb_detectNumberFormat(cb, ds, ts)
-	cb_repairWideTable(cb)
+
+	appendLog("add column dividers")
+	STAD.insertColumnDividers(cb)
+
 	clipboard := cb
-	
-	
+
 	;MsgBox % "ds = '" . ds . "' ts = '" . ts . "'"
 	
 	flushLogAndExit()
@@ -412,12 +423,12 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; BCP                 ;
 ;;;;;;;;;;;;;;;;;;;;;;;
-#If WinActive("ahk_exe chrome.exe") && ( WinActive("Incident") || WinActive("Chat Incident"))
+#If WinActive("ahk_exe chrome.exe") && ( WinActive("Incident") || WinActive("Chat Incident") || WinActive("Solman Incident") || WinActive("SPC Incident"))
 ^q::
 	
 	;paste the clipboard but with non-breaking spaces instead of regular spaces
-	nbsp:=Chr(0x00A0)
-	clipboard:=StrReplace(clipboard, " ", nbsp)
+	nbsp := Chr(0x00A0)
+	clipboard := StrReplace(clipboard, " ", nbsp)
 	
 	Send ^v
 
