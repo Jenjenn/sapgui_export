@@ -207,28 +207,34 @@ st12_copyCallStack(win_id){
 
 st12_callStackEnabled(win_id){
 /*
-	Determines if the call stack is showing in the ABAP trace of ST12
-	The test is a search for the "Stack Off" button in the AppToolbar
+	When:
+		> the call stack is turned on
+		> and "only callhier" is enabled
+	then Button9 will have certain dimensions depending on the theme.
+	for example, in blue crystal:
+		> western: w = 62 and h = 28
+		> eastern: w = 76 and h = 35
 */
 	appendLog("checking for a call stack")
 	
-	t := getControlProperties(win_id, "AppToolbar")
-	
-	if (ErrorLevel){
-		appendLog("couldn't find the standard toolbar, 'AppToolbar'")
-		return
+	;Blue Crystal
+	t := getControlByClassNN(win_id, "Button9")
+	if ( (t.w = 62 AND t.h = 28)
+	OR (t.w = 76 AND t.h = 35) ) {
+		appendLog("call stack enabled (blue_crystal)")
+		return true
 	}
-	
-	locateGuiElementWithinParent(win_id, t, "at_stkoff_btn")
-	
-	if (ErrorLevel){
-		ErrorLevel := 0
-		appendLog("call stack not enabled")
-		return false
+
+	;Signature
+	t := getControlByClassNN(win_id, "Button7")
+	if ( (t.w = 51 AND t.h = 20)
+	OR (t.w = 58 AND t.h = 21) ) {
+		appendLog("call stack enabled (signature)")
+		return true
 	}
-	
-	appendLog("call stack enabled")
-	return true
+
+	appendLog("call stack not enabled")
+	return false
 }
 
 

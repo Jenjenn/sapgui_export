@@ -34,18 +34,10 @@
 	root -> blue_crystal -> tbw_drop -> type
 */
 
+Global SUPPORTED_THEMES := ["blue_crystal","signature"]
 
 ;preload the visual elements of SAPGUI
 Global sapgui_elements := {}
-	
-	;the top left menu of the SAPGUI window, used in theme detection
-	sapgui_elements.window_menu := {}
-	sapgui_elements.window_menu.signature := { handles:[] }
-	sapgui_elements.window_menu.signature.handles[1] := LoadPicture("signature/western_menu.png")
-	sapgui_elements.window_menu.signature.handles[2] := LoadPicture("signature/western_menu_inverted.png")
-	sapgui_elements.window_menu.signature.handles[3] := LoadPicture("signature/eastern_menu.png")
-	sapgui_elements.window_menu.signature.handles[4] := LoadPicture("signature/eastern_menu_inverted.png")
-	
 	
 	;the export button which appears in ToolbarWindow controls
 	;sapgui_elements.tbw_exp_drop := { etype:"dd_button" }
@@ -91,99 +83,28 @@ Global sapgui_elements := {}
 		
 		;put new themes here
 		
-	
-	;the button that turns off the call stack in ST12
-	;TODO : this button is only for the bottom-up call hierarchy button, not the Top-down hierarchy button
-	sapgui_elements.at_stkoff_btn := { etype:"button" }
-	
-		sapgui_elements.at_stkoff_btn.blue_crystal:= { handles:[] }
-		sapgui_elements.at_stkoff_btn.blue_crystal.handles[1] := LoadPicture("blue_crystal/western_at_stkoff_button.png")
-		sapgui_elements.at_stkoff_btn.blue_crystal.handles[2] := LoadPicture("blue_crystal/eastern_at_stkoff_button.png")
 		
-		;NOT YET IMPLEMENTED
-		sapgui_elements.at_stkoff_btn.signature:= { handles:[] }
-		sapgui_elements.at_stkoff_btn.signature.handles[1] := LoadPicture("signature/western_at_stkoff_button.png")
-		sapgui_elements.at_stkoff_btn.signature.handles[2] := LoadPicture("signature/eastern_at_stkoff_button.png")
-	
-		;put new themes here
-	
 	;add new GUI elements here
-	
 
-getSapGuiTheme(winID)
+getSapGuiTheme()
 {
 	/*
 		Important to know the theme when searching for buttons
 		Colors are in RGB hex
 	*/
-	
-	;the window's y starts at 8 if it's maximized
-	WinGet, is_max, MinMax, ahk_id %winID%
-	offset:= is_max = 1 ? 8 : 0
 
-/*  ;;;;;;;;;;;;;;;;;;
-	Blue Crystal Theme
-*/	;;;;;;;;;;;;;;;;;;
+	if (!includes(SUPPORTED_THEMES, SAPGUI_THEME))
+		throw Exception ("Action unsupported for theme: " . SAPGUI_THEME)
+	
+	return SAPGUI_THEME
 
-	blue_crystal_color = 0x009DE0
-	
-	CoordMode, Pixel, Window
-	PixelGetColor, bar_color, 12, % offset + 2, RGB
-	
-	/*
-	MsgBox % "winID = " . winID
-	. "`r`nis_max = " . is_max
-	. "`r`nyoffset = " . offset
-	. "`r`nbar color is : " . bar_color
-	*/
-	
-	if (bar_color = blue_crystal_color){
-		appendLog("theme is 'blue_crystal'")
-		return "blue_crystal"
-	}
-	
-/*  ;;;;;;;;;;;;;;;
-	Signature Theme
-*/  ;;;;;;;;;;;;;;;
-	
-	
-	; search the upper left for the window menu buttons
-	WinGetPos, , , xw, , ahk_id %winID%
-	
-	x1 := offset
-	y1 := offset
-	x2 := 50 + offset
-	y2 := 50 + offset
-	
-	CoordMode, Pixel, Window
-;	for i, image in sapgui_signature_theme_images {
-;		ImageSearch, , , x1, y1, x2, y2, *10 HBITMAP:*%image%
-;		if (!ErrorLevel)
-;			return "signature/"
-;	}
-	
-	for i, image in sapgui_elements.window_menu.signature.handles {
-		ImageSearch, , , x1, y1, x2, y2, *10 HBITMAP:*%image%
-		if (!ErrorLevel){
-			appendLog("  theme is 'signature'")
-			return "signature"
-		}
-	}
-	
-	
-/*  ;;;;;;;;;;;;;;
-	No Theme Found
-*/  ;;;;;;;;;;;;;;
-	
-	;MsgBox Unsupported theme. Supported themes are:`r`nSAP Signature Theme`r`nBlue Crystal Theme`r`nIf you are receiving this message despite using a supported theme, mail I844387.
-	
-	flushLogAndExit()
 }
 
 
 getControlProperties(winID, classnn){
 	
 	ControlGetPos, x, y, w, h, %classnn%, ahk_id %winID%
+	ControlGetText, ctext, %classnn%, ahk_id %winID%
 	
 	;check we found something
 	if (x = ""){
@@ -194,6 +115,7 @@ getControlProperties(winID, classnn){
 	cntl := {}
 	cntl.parentWinID := winID
 	cntl.classnn := classnn
+	cntl.text := ctext
 	cntl.x := x
 	cntl.y := y
 	cntl.w := w
@@ -203,7 +125,7 @@ getControlProperties(winID, classnn){
 	return cntl
 }
 
-getDistanceBetweenTwoControls(win_id, c1, c2){
+getDistanceBetweenControls(win_id, c1, c2){
 /*
 	Accepts classnn values
 	returns the distance between the top left corners of two controls
@@ -222,12 +144,12 @@ getClassNNByClass(winID, partialclass, partialtext="")
 		partialtext in the Control Text
 	*/
 	
-	appendLog("looking for '" . partialclass . "' in getClassNNByClass")
+	appendLog("looking for controls where ClassNN contains '" . partialclass . "'")
 	
 	WinGet, controls, ControlList, ahk_id %winID%
 	;MsgBox %controls%
 	
-	Results := Array()
+	Results := []
 	
 	Loop, Parse, controls, `n
 	{
@@ -242,15 +164,16 @@ getClassNNByClass(winID, partialclass, partialtext="")
 		{
 			ControlGetText, ctext, %cname%, ahk_id %winID%
 			
-			if (partialtext = "" 
-			OR InStr(ctext, partialtext)){
+			if (partialtext = "" OR InStr(ctext, partialtext))
+			{
 				appendLog("found '" . cname . "'")
 				Results.push(cname)
 			}
 		}
 	}
 	
-	if (Results.length() = 0){
+	if (Results.length() = 0)
+	{
 		ErrorLevel := 1
 		Results := ""
 	}
@@ -260,6 +183,40 @@ getClassNNByClass(winID, partialclass, partialtext="")
 	
 	return Results
 }
+
+getControlByClassNN(winId, classnn)
+{
+	ControlGet, hwnd, HWND, , %classnn%, ahk_id %winID%
+
+	if (hwnd)
+	    return new MyControl(hwnd)
+
+	throw Exception("no such control with '" . classnn . "'")
+}
+
+getControlsByClass(winID, class_name)
+{
+	appendLog("looking for controls of class '" . class_name . "'")
+	
+	WinGet, all_controls, ControlList, ahk_id %winID%
+	
+	matching_controls := []
+	
+	Loop, Parse, all_controls, `n
+	{
+		classnn := A_LoopField
+		
+		if RegExMatch(classnn, "^" . class_name . "\d{1,}")
+		{
+			appendLog("found '" . classnn . "'")
+			matching_controls.push(getControlByClassNN(winId, classnn))
+		}
+	}
+	
+	ErrorLevel := matching_controls.length() = 0 ? 1 : 0
+	return matching_controls
+}
+
 
 moveClickRestore(winID, winx, winy, byref clicked_classnn = ""){
 	
@@ -307,7 +264,7 @@ locateGuiElement(winID, x1, y1, x2, y2, name){
 	coord := {}
 	
 	;we need to know the theme to find the correct button
-	theme_pf := getSapGuiTheme(winID)
+	theme_pf := getSapGuiTheme()
 	
 	CoordMode, Pixel, Window
 	for i, image_handle in sapgui_elements[name][theme_pf].handles {
@@ -343,7 +300,7 @@ locateGuiElementWithinParent(winID, parentcontrol, name){
 	coord := {}
 	
 	;we need to know the theme to find the correct button
-	theme_pf := getSapGuiTheme(winID)
+	theme_pf := getSapGuiTheme()
 	
 	CoordMode, Pixel, Window
 	for i, image_handle in sapgui_elements[name][theme_pf].handles {
@@ -365,9 +322,20 @@ locateGuiElementWithinParent(winID, parentcontrol, name){
 }
 
 
-Join(arr, s){
+Join(arr, s)
+{
 	;static _ := Array.Join := Func("Join")
 	for k,v in arr
 	o.= s . v
 	return SubStr(o,StrLen(s)+1)
+}
+
+Includes(arr, value)
+{
+	for i, e in arr
+	{
+		if (e = value)
+			return true
+	}
+	return false
 }

@@ -113,13 +113,13 @@ getToolbarWindowForALVGrid(winID, alvgridnn){
 	;multiple, determine the most appropriate choice based on distance
 	;get the distance between the top-left corners of the grid and the first toolbar
 	
-	d1 := getDistanceBetweenTwoControls(winId, alvgridnn, toolbar_windows[1])
+	d1 := getDistanceBetweenControls(winId, alvgridnn, toolbar_windows[1])
 	closest := toolbar_windows[1]
 	
 	i := 2
 	appendLog("'" . toolbar_windows[1] . "' is " . d1 . " units away")
 	while (i <= toolbar_windows.length()){
-		d2 := getDistanceBetweenTwoControls(winId, alvgridnn, toolbar_windows[i])
+		d2 := getDistanceBetweenControls(winId, alvgridnn, toolbar_windows[i])
 		appendLog("'" . toolbar_windows[i] . "' is " . d2 . " units away")
 		
 		if (d2 < d1){

@@ -56,6 +56,9 @@ SetDefaultMouseSpeed, 0
 /*	global control for postprocessing SAPGUI output
 	Set this to 0 or false if you don't want output to be modified
 */
+
+Global SAPGUI_THEME := "blue_crystal"
+
 Global postprocess_sapgui := 1
 Global debug_gdip := 1
 
@@ -69,18 +72,20 @@ ExitFunc(){
 
 OnExit("ExitFunc")
 
+OnError("flushLogAndExit")
+
 #include lib/logging.ahk
 /*
 	clearLog()
 	appendLog(message)
 */
 
+#include lib/MyControl.ahk
 
 #include lib/helpers.ahk
 /*
 	getSapGuiThemePrefix(winID)
-	getControlProperties(winID, classnn)
-	getClassNNByClass(winID, partialclass, partialtext="")
+	getControlsByClass(winID, class_name)
 	moveClickRestore(winID, winx, winy, block=True, byref clicked_classnn = "")
 	findImage(x1, y1, x2, y2, name)
 */
@@ -322,15 +327,14 @@ showGridsAndToolbars(){
 
 	WinGet, winID, ID, A
 
-	alvgrids := getClassNNByClass(winID, "SAPALVGrid")
+	alvgrids := getControlsByClass(winID, "SAPALVGrid\d{1,}")
 
 	toolbar_window := getToolbarWindowForALVGrid(winID, "null")
 
-	str := "grids: "
+	str := "ALV grids: "
 	grid := ""
-		For Index, Value in alvgrids {
-			grid := getControlProperties(winID, Value)
-			str .= Value . "," . grid.x . "," . grid.y . "," . grid.w . "," . grid.y . ";"
+		For Index, alv_grid in alvgrids {
+			str .= Value . "," . alv_grid.x . "," . alv_grid.y . "," . alv_grid.w . "," . alv_grid.y . ";"
 		}
 
 	MsgBox % str . "`r`n" . "toolbar: " . toolbar_window
@@ -346,14 +350,21 @@ KeyWait, Control
 KeyWait, Alt
 
 	clearLog()
+	appendLog("debugging")
 
-	;WinGet, winID, ID, A
+	WinGet, winID, ID, A
+	;controls := getControlsByClass(winID, "Button")
 
-	;processALVGrid(winID, "SAPALVGrid1")
+	;MouseGetPos, , , , hwnd, 2
+	;a_control := new MyControl(hwnd)
 
-	;prefix := getSapGuiThemePrefix(winID)
-	
-	;MsgBox % test
+	; cf := getControlByClassNN(winID, "Edit1")
+	; MsGBox % cf.h
+
+	abcd := { x: 3
+	,	y: 4}
+
+	flushLogAndExit()
 
 
 return
