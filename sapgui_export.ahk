@@ -133,7 +133,7 @@ OnError("flushLogAndExit")
 
 
 
-sendSystemListSave(winID := ""){
+sendSystemListSave(winID := 0){
 	;can we replace Send with ControlSend? SAPGUI seems to not like controlsend for this purpose
 	;But Send is okay here since there should be no delays (i.e. round trips with the server)
 	
@@ -152,14 +152,13 @@ sendSystemListSave(winID := ""){
 
 waitAndProcessSaveDialog(timeout := 20)
 {
-    WinWait(sapgui_elements.save_list_window.title, , timeout)
+    win_id := WinWait(sapgui_elements.save_list_window.title, , timeout)
 	
-	if (ErrorLevel){
-		appendLog("'Save list in file...' didn't appear in " timeout "seconds, exiting")
+	if (!win_id){
+		appendLog("'" sapgui_elements.save_list_window.title 
+			. "' didn't appear in " timeout "seconds, exiting")
 		flushLogAndExit()
 	}
-
-	win_id := WinGetID(sapgui_elements.save_list_window.title)
 	
     ; "ControlSend", sadly, doesn't work on the window in this case
 	;appendLog("Clicking 'In the clipboard'")
@@ -173,11 +172,17 @@ waitAndProcessSaveDialog(timeout := 20)
 	; doesn't always work unless we sleep for a bit
 	Sleep(15)
 	ControlSend("{Enter}", , win_id)
+
+	return win_id
 }
 
-waitForSaveDialogToClose()
+waitForSaveDialogToClose(win_id, timeout := 30)
 {
-	WinWaitClose(sapgui_elements.save_list_window.title)
+	if ( !WinWaitClose(win_id, , timeout) )
+	{
+		appendLog("download from app server timed out after " timeout " seconds")
+		flushLogAndExit()
+	}
 }
 
 sapgui_postProcess(){
@@ -299,9 +304,9 @@ sapgui_postProcess(){
 		processALVGrid(winID, cf)
 		if (!ErrorLevel){
 			
-			waitAndProcessSaveDialog()
+			save_hwnd := waitAndProcessSaveDialog()
 			if (postprocess_sapgui){
-				waitForSaveDialogToClose()
+				waitForSaveDialogToClose(save_hwnd)
 				
 				sapgui_postProcess()
 			}
@@ -364,13 +369,17 @@ KeyWait("Alt")
 
 	winID := WinGetID("A")
 
+	tb_windows := getControlsByClass(win_id, "ToolbarWindow")
+	classes := ""
+	for i, e in tb_windows
+	{
+		classes .= e.classnn ", " e.visible ", " e.x ", " e.y "`r`n"
+	}
+	MsgBox(classes)
 
-	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
-	MsgBox(rb_control.classnn)
 
-
-	abcd := { x: 3
-	,	y: 4}
+	;rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
+	;MsgBox(rb_control.classnn)
 
 	flushLogAndExit()
 

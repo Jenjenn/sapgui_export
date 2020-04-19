@@ -13,7 +13,7 @@ findExport(parent_control, byref type_found := "")
 	
 	elements := []
 	
-	if (parent_control.wclass == "ToolbarWindow")
+	if (InStr(parent_control.wclass, "ToolbarWindow"))
 	{
 		elements.push("tbw_exp_drop")
 		elements.push("tbw_exp_btn")
@@ -79,14 +79,24 @@ getToolbarWindowForALVGrid(winID, alvgrid){
 	appendLog("getting ToolbarWindow for '" . alvgrid.classnn . "'")
 	
 	toolbar_windows := getControlsByClass(winID, "ToolbarWindow")
+
+	; only get visible toolbarwindows
+	temp := []
+	for i, tbw in toolbar_windows
+	{
+		if (tbw.visible)
+			temp.push(tbw)
+	}
+
+	toolbar_windows := temp
 	
-	if (!toolbar_windows.length)
+	if (!(toolbar_windows.length))
 	{
 		appendLog("no ToolbarWindow found")
 		return ""
 	}
 
-	appendLog("found '" . toolbar_windows.length . "' ToolbarWindows")
+	appendLog("found '" . toolbar_windows.length . "' visible ToolbarWindows")
 	
 	;exactly one toolbar is found
 	if (toolbar_windows.Length = 1)
@@ -101,10 +111,10 @@ getToolbarWindowForALVGrid(winID, alvgrid){
 	closest := toolbar_windows[1]
 	
 	i := 2
-	appendLog("'" . toolbar_windows[1] . "' is " . d1 . " units away")
+	appendLog("'" . toolbar_windows[1].classnn . "' is " . d1 . " units away")
 	while (i <= toolbar_windows.length){
 		d2 := alvgrid.getDistance(toolbar_windows[i])
-		appendLog("'" . toolbar_windows[i] . "' is " . d2 . " units away")
+		appendLog("'" . toolbar_windows[i].classnn . "' is " . d2 . " units away")
 		
 		if (d2 < d1){
 			closest := toolbar_windows[i]

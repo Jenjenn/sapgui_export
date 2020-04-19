@@ -157,7 +157,7 @@ moveClickRestore(winID, winx, winy, byref clicked_class_hwnd := ""){
 	CoordMode("Mouse", "Screen")
 	MouseGetPos(mx, my)
 	
-	CoordMode("Mouse", "Window")
+	CoordMode("Mouse", "Client")
 	
     Click(winx, winy)
 	;sometimes we want to know what was clicked
@@ -172,7 +172,7 @@ moveClickDragRestore(x_from, y_from, x_to, y_to){
 	CoordMode("Mouse", "Screen")
 	MouseGetPos(mx, my)
 	
-	CoordMode("Mouse", "Window")
+	CoordMode("Mouse", "Client")
 	
 	MouseClickDrag("Left", x_from, y_from, x_to, y_to, 0)
 	

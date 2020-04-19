@@ -5,8 +5,8 @@ class STAD
 	{
 		appendLog("copying STAD records - overview")
 		Send("!ww")
-		waitAndProcessSaveDialog()
-		waitForSaveDialogToClose()
+		save_hwnd := waitAndProcessSaveDialog()
+		waitForSaveDialogToClose(save_hwnd)
 
 		stad_output := clipboard
 		STAD.insertColumnDividers(stad_output)
@@ -60,8 +60,8 @@ class STAD
 		title := WinGetTitle(winID)
 		
 		ControlClick("Button2", winID, , , 2)
-		waitAndProcessSaveDialog()
-		waitForSaveDialogToClose()
+		save_hwnd := waitAndProcessSaveDialog()
+		waitForSaveDialogToClose(save_hwnd)
 		
 		clipboard := title "`r`n" clipboard
 				
