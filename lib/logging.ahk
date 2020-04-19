@@ -3,8 +3,8 @@
 ;for the time being use flushLogAndExit instead of just exit
 ;OnExit("flushLogOnExit", -1)
 
-Global exec_log :=
-Global script_start :=
+Global exec_log := ""
+Global script_start := 0
 
 clearLog(){
 	global exec_log := "log cleared at " . A_Now . "`r`n"
@@ -36,7 +36,8 @@ appendLog(mes, stack_offset := -1){
 	}
 	;end of indent formatting
 	
-	SplitPath, % logger.file, fname
+	;SplitPath(InputVar [, OutFileName, OutDir, OutExtension, OutNameNoExt, OutDrive])
+	SplitPath(logger.file, fname)
 	
 	diff := A_TickCount - script_start
 	
@@ -49,15 +50,15 @@ appendLog(mes, stack_offset := -1){
 flushLog(){
 	appendLog("flush called by ===>", -2)
 	
-	FileAppend, %exec_log%, log.txt, UTF-8
+	FileAppend(exec_log, "log.txt", "UTF-8")
 	global exec_log := ""
 	;MsgBox % A_WorkingDir
 }
 
-flushLogAndExit(){
+flushLogAndExit(e := ""){
 	appendLog("flush and exit called by ===>", -2)
 	
-	FileAppend, %exec_log%, log.txt, UTF-8
+	FileAppend(exec_log, "log.txt", "UTF-8")
 	;MsgBox % A_WorkingDir
 	exit
 }

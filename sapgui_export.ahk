@@ -40,11 +40,7 @@
 
 
 
-#NoEnv
-
-SetDefaultMouseSpeed, 0
-
-#MaxMem 128
+SetDefaultMouseSpeed 0
 
 /*	reducing SetKeyDelay will make the script execute faster, but the trade off is stability
 	Most of the time spent waiting is for the server to format the output.
@@ -66,7 +62,7 @@ Global debug_gdip := 1
 
 Global gdip_token := Gdip_Startup()
 
-ExitFunc(){
+ExitFunc(reason, code){
 	Gdip_Shutdown(gdip_token)
 }
 
@@ -137,7 +133,7 @@ OnError("flushLogAndExit")
 
 
 
-sendSystemListSave(winID=""){
+sendSystemListSave(winID := ""){
 	;can we replace Send with ControlSend? SAPGUI seems to not like controlsend for this purpose
 	;But Send is okay here since there should be no delays (i.e. round trips with the server)
 	
@@ -148,35 +144,40 @@ sendSystemListSave(winID=""){
 	;S4 Hana cloud edition changes the shortcut chain from ytai -> ytss
 	;luckily there is no key conflict and we can just add the additional shortcut keys
 	;Send, !ytai
-	Send, !ytaiss
+	Send("!ytaiss")
 	
 	waitAndProcessSaveDialog()
 	flushLogAndExit()
 }
 
-waitAndProcessSaveDialog(secondsToWait=20)
+waitAndProcessSaveDialog(timeout := 20)
 {
-    WinWait, Save list in file..., , %secondsToWait%
+    WinWait(sapgui_elements.save_list_window.title, , timeout)
 	
 	if (ErrorLevel){
-		appendLog("'Save list in file...' didn't appear in " . secondsToWait . "seconds, exiting")
+		appendLog("'Save list in file...' didn't appear in " timeout "seconds, exiting")
 		flushLogAndExit()
 	}
+
+	win_id := WinGetID(sapgui_elements.save_list_window.title)
 	
-    ;"ControlSend", sadly, doesn't work on the window in this case
-	appendLog("Clicking 'In the clipboard'")
-    ControlClick, x25 y220, Save list in file...,,,, Pos
-	;on older releases, the spacing is different and clicking in a specific position doesn't work
+    ; "ControlSend", sadly, doesn't work on the window in this case
+	;appendLog("Clicking 'In the clipboard'")
+    ; preferred method ==> ControlClick("x25 y195", "Save list in file...", , , , "Pos")
+	; on older releases, the spacing is different and clicking in a specific position doesn't work
 	
-	;testing to see if the classNN of the control ever changes...
-	;ControlSend, Afx:0FA00000:b1, {Up}
-	;doesn't always work unless we sleep for a bit
-	Sleep, 15
-	ControlSend, , {Enter}, Save list in file...
+	; testing new method
+	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
+	ControlSend("{Up}", rb_control.hwnd)
+
+	; doesn't always work unless we sleep for a bit
+	Sleep(15)
+	ControlSend("{Enter}", , win_id)
 }
 
-waitForSaveDialogToClose(){
-	WinWaitClose, Save list in file...
+waitForSaveDialogToClose()
+{
+	WinWaitClose(sapgui_elements.save_list_window.title)
 }
 
 sapgui_postProcess(){
@@ -200,15 +201,15 @@ sapgui_postProcess(){
 ;        SAPGUI       ;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-#IfWinActive ahk_exe saplogon.exe
+#If WinActive("ahk_exe saplogon.exe")
 ` Up::
 ;KeyWait, Control
 
-	WinGet, winID, ID, A
-	WinGetTitle, WTitle, ahk_id %winID%
+	winID := WinGetID("A")
+	title := WinGetTitle(winID)
 	
 	;don't do anything if it's just the Logon window
-	if InStr(WTitle, "SAP Logon")
+	if InStr(title, "SAP Logon")
 	{
 		flushLogAndExit()
 	}
@@ -217,17 +218,17 @@ sapgui_postProcess(){
 	appendLog("checking exception list")
 	
 	;In case we've already opened a "save list in file..." dialog
-	if InStr(WTitle, "Save list in file..."){
+	if InStr(title, "Save list in file..."){
 		waitAndProcessSaveDialog()
 		sapgui_postProcess()
 		flushLogAndExit()
 	}
 	
 	;fast log off
-	if (WTitle = "Log Off"){
+	if (title = "Log Off"){
 		appendLog("logging off")
-		CoordMode, Mouse, Window
-		ControlClick, x80 y110, ahk_id %WinID%, , , 2, Pos
+		CoordMode("Mouse", "Window")
+		ControlClick("x80 y110", winID, , , 2, "Pos")
 		flushLogAndExit()
 	}
 	
@@ -236,57 +237,65 @@ sapgui_postProcess(){
 	;Or need some kind of special prep
 	
     ;ST12 Trace list
-    if (WTitle = "Trace analyses fullscreen list"){
-		Send, !exl
+    if (title = "Trace analyses fullscreen list"){
+		Send("!exl")
 		waitAndProcessSaveDialog()
 		flushLogAndExit()
 	}
 	;ST12 SQL Summary
-	else if (InStr(WTitle, "SQL Summary - ") || InStr(WTitle, "SQL Summary for Code Location ")){
-		Send, !exl
+	else if (InStr(title, "SQL Summary - ") || InStr(title, "SQL Summary for Code Location ")){
+		Send("!exl")
 		waitAndProcessSaveDialog()
 		flushLogAndExit()
 	}
     ;ST12 trace details
-    else if InStr(WTitle, "ABAP Trace Per Call"){
+    else if InStr(title, "ABAP Trace Per Call"){
 		st12_copyABAPTraceScreen(winID)
 		
 	}
 	;ST12 - Statistical Records
-	else if InStr(WTitle, "Collected Statistical records for analysis"){
-		Send, !exl
+	else if InStr(title, "Collected Statistical records for analysis"){
+		Send("!exl")
 		waitAndProcessSaveDialog()
 		flushLogAndExit()
 	}
 	;OS01 - LAN Check by Ping
-	else if InStr(WTitle, "LAN Check by PING"){
+	else if InStr(title, "LAN Check by PING"){
 		copyLanCheckScreen(winID)
 		flushLogAndExit()
 	}
 	;STAD main result screen
-	else if InStr(WTitle, "SAP Workload: Single Statistical Records - Overview"){
+	else if InStr(title, "SAP Workload: Single Statistical Records - Overview"){
 		STAD.copyrecordsOverview(winID)
 	}
 	;STAD RFC subrecord dialog
-	else if (InStr(WTitle, "RFC: ") = 1) AND InStr(WTitle, "Records")
-	     OR (InStr(WTitle, "HTTP: ") = 1) AND InStr(WTitle, "Records"){
+	else if (InStr(title, "RFC: ") = 1) AND InStr(title, "Records")
+	     OR (InStr(title, "HTTP: ") = 1) AND InStr(title, "Records"){
 		STAD.copyCallDialog(winID)
 	}
 	
 	appendLog("past exception list")
 	
 	;past exception list, check if we have an ALVGrid in focus
-	ControlGetFocus, cf, ahk_id %winID%
+	cf := ControlGetFocus(winID)
 	
-	appendLog("current focus is control '" . cf . "'")
-	
-	if (cf = ""){
-		appendLog("checking control under the mouse")
-		MouseGetPos, , , , cf
-		appendLog("control under the mouse is '" . cf . "'")
+	if (!cf)
+	{
+		appendLog("couldn't get control of focus, check under the mouse")
+		MouseGetPos( , , , cf, 2)
+
+		if (!cf)
+		{
+			appendLog("didn't find a control under the mouse")
+			goto DefaultKeyStrokes
+		}
 	}
+
+	cf := MyControl.new(cf)
+	appendLog("target control is '" . cf.classnn . "'")
 	
-	if InStr(cf, "SAPALVGrid"){
+	if (cf.wclass == "SAPALVGrid")
+	{
 		processALVGrid(winID, cf)
 		if (!ErrorLevel){
 			
@@ -300,6 +309,7 @@ sapgui_postProcess(){
 		flushLogAndExit()
 	}
 	
+	DefaultKeyStrokes:
 	appendLog("sending default keystrokes")
 	
 	;Default save as keys
@@ -325,9 +335,9 @@ return
 
 showGridsAndToolbars(){
 
-	WinGet, winID, ID, A
+	winID := WinGetID("A")
 
-	alvgrids := getControlsByClass(winID, "SAPALVGrid\d{1,}")
+	alvgrids := getControlsByClass(winID, "SAPALVGrid")
 
 	toolbar_window := getToolbarWindowForALVGrid(winID, "null")
 
@@ -337,7 +347,7 @@ showGridsAndToolbars(){
 			str .= Value . "," . alv_grid.x . "," . alv_grid.y . "," . alv_grid.w . "," . alv_grid.y . ";"
 		}
 
-	MsgBox % str . "`r`n" . "toolbar: " . toolbar_window
+	MsgBox(str "`r`ntoolbar: " toolbar_window)
 
 	return
 	
@@ -346,20 +356,18 @@ showGridsAndToolbars(){
 
 ^!z::
 
-KeyWait, Control
-KeyWait, Alt
+KeyWait("Control")
+KeyWait("Alt")
 
 	clearLog()
 	appendLog("debugging")
 
-	WinGet, winID, ID, A
-	;controls := getControlsByClass(winID, "Button")
+	winID := WinGetID("A")
 
-	;MouseGetPos, , , , hwnd, 2
-	;a_control := new MyControl(hwnd)
 
-	; cf := getControlByClassNN(winID, "Edit1")
-	; MsGBox % cf.h
+	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
+	MsgBox(rb_control.classnn)
+
 
 	abcd := { x: 3
 	,	y: 4}
@@ -375,7 +383,7 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; Excel               ;
 ;;;;;;;;;;;;;;;;;;;;;;;
-#IfWinActive ahk_exe EXCEL.EXE
+#If WinActive("ahk_exe EXCEL.EXE")
 ^q::
 	
 	clearLog()
@@ -411,7 +419,7 @@ return
 ; Notepad++           ;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-#IfWinActive ahk_exe notepad++.exe
+#If WinActive("ahk_exe notepad++.exe")
 ^q::
 	
 	clearLog()
@@ -439,9 +447,14 @@ return
 	
 	;paste the clipboard but with non-breaking spaces instead of regular spaces
 	nbsp := Chr(0x00A0)
+
+	cb := clipboard
 	clipboard := StrReplace(clipboard, " ", nbsp)
 	
-	Send ^v
+	Send("^v")
+
+	sleep(10)
+	clipboard := cb
 
 return
 

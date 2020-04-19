@@ -3,7 +3,9 @@ excel_setSeparators(byref xl, byref cb){
 	cb_detectNumberFormat(cb, dsep, tsep)
 	
 	if (ErrorLevel){
-		TrayTip, Set Excel Separators, Couldn't detect the number separator from the clipboard data. Ensure the Excel separators are set accordingly., 10, 18
+		TrayTip("Set Excel Separators"
+		, "Couldn't detect the number separator from the clipboard data. Ensure the Excel separators are set accordingly."
+		, 18)
 	}
 	
 	xl.UseSystemSeparators := 0
@@ -46,7 +48,7 @@ excel_paste(byref xl, byref cb){
 		} catch e {
 			i++
 			appendLog("attempt " . i . " failed")
-			sleep 20
+			sleep(20)
 			if (i >= 10){
 				clipboard := temp
 				throw e

@@ -14,7 +14,7 @@ cb_removeInitialHeader(byref cb_with_newlines){
 	*/
 	
 	static needle := "^.*Dynamic List Display *\d\r\n-------*\r\n"
-	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "", 1)
+	cb_with_newlines := RegexReplace(cb_with_newlines, needle, , , 1)
 }
 
 cb_removeTrailingPage(byref cb_with_newlines){
@@ -357,5 +357,5 @@ cb_replaceSQLConcat(byref cb){
 }
 
 cb_replaceCharAtPos(byref cb, position, newchar){
-	cb := RegexReplace(cb, ".", newchar, 0, 1, position)
+	cb := RegexReplace(cb, ".", newchar, , 1, position)
 }

@@ -5,30 +5,31 @@ whichLanCheckScreen(winID)
 		by examining the layout
 	*/
 	
-	;the "specific IP" pings are bit different
-	;but the details screen should work
-	WinGetTitle, title, ahk_id %winID%
-	if InStr(title, "Specific IP Address")
-	return "details"
+	; the "specific IP" pings are bit different
+	; but the details screen should work
+	if InStr(WinGetTitle(winID), "Specific IP Address")
+		return "details"
 	
-	;check if button15 is visible first -> Server selection screen
-	ControlGet, bvisible, Visible, , Button15, ahk_id %winID%
-	if (ErrorLevel) ;if button doesn't exist, then we're not in OS01
-	return ""
-	if (bvisible) ;button not visible, we're in the detail screen
-	return "serverlist"
+	; check if button15 is visible first -> Server selection screen
+	button15 := ControlGetHwnd("Button15", winID)
+
+	; if button doesn't exist, then we're not in OS01
+	if (!button15)
+		return ""
+
+	; check if button15 is visible first -> Server selection screen
+	if (ControlGetVisible(button15))
+		return "serverlist"
 	
-	;check if button6 is visible next -> Server type screen
-	ControlGet, bvisible, Visible, , Button6, ahk_id %winID%
-	if (bvisible) ;button not visible, we're in the detail screen
-	return "servertypelist"
+	; check if button6 is visible next -> Server type screen
+	if (ControlGetVisible("Button6", winID))
+		return "servertypelist"
 	
-	;check if button3 is visible last -> Results screen
-	ControlGet, bvisible, Visible, , Button3, ahk_id %winID%
-	if (bvisible) ;button not visible, we're in the detail screen
-	return "results"
+	; check if button3 is visible last -> Results screen
+	if (ControlGetVisible("Button3", winID))
+		return "results"
 	
-	;last possibility is the Details screen
+	; button15, button6, and button3 are not visible -> details screen
 	return "details"
 }
 
@@ -44,33 +45,30 @@ copyLanCheckScreenDetails(winID)
 	*/
 	
 	
-	;Get the header text
-	header_classnn := getClassNNByClass(winID, "Internet Explorer_Server")[1]
+	; Get the control of the header
+	header_control := getControlsByClass(winID, "Internet Explorer_Server")[1]
 	
-	;put focus on the header area
-	;ControlFocus acts really weird here; SAPGUI doesn't know how to handle it properly
-	;So we use a ControlClick instead
-	ControlClick, %header_classnn%, ahk_id %winID%
-	Send, {Ctrl Down}ac{Ctrl Up}
+	; put focus on the header area
+	; ControlFocus acts really weird here; SAPGUI doesn't know how to handle it properly
+	; So we use a ControlClick instead
+	ControlClick(header_control)
+	Send("{Ctrl Down}ac{Ctrl Up}")
 	
-	;save to clipboard and get rid of some whitespace
-	output := ClipBoard
+	; save to clipboard and get rid of some whitespace
+	output := clipboard
 	output := StrReplace(output, "`r`n")
 	output := RegExReplace(output, " {1,}", " ")
 	
 	;get the body text
-	body_classnn := getClassNNByClass(winID, "SAPALVGrid")[1]
-	ControlFocus, %body_classnn%, ahk_id %winID%
+	body_control := getControlsByClass(winID, "SAPALVGrid")[1]
+	ControlFocus(body_control)
 	
 	;Send, {Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}
-	ControlSend, %body_classnn%, {Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}, ahk_id %WinID%
+	ControlSend("{Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}", body_control)
 	
-
-	output=%output%`r`n`r`n%ClipBoard%
+	output := output "`r`n`r`n" clipboard
 	
-	Clipboard := output
-	
-	
+	clipboard := output
 }
 
 

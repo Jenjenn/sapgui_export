@@ -4,7 +4,7 @@ class STAD
 	copyRecordsOverview(winID)
 	{
 		appendLog("copying STAD records - overview")
-		Send, !ww
+		Send("!ww")
 		waitAndProcessSaveDialog()
 		waitForSaveDialogToClose()
 
@@ -31,7 +31,7 @@ class STAD
 		column_offsets := []
 		match_p := 1
 
-		while (match_p := RegExMatch(header, needle_headings, 0, match_p)) {
+		while (match_p := RegExMatch(header, needle_headings, , match_p)) {
 			column_offsets.push(match_p - 3)
 			match_p += 1
 		}
@@ -57,14 +57,14 @@ class STAD
 			for the save dialog to close then modify the clipboard contents
 		*/
 		
-		WinGetTitle, title, ahk_id %winID%
+		title := WinGetTitle(winID)
 		
-		ControlClick, Button2, ahk_id %winID%, , , 2
+		ControlClick("Button2", winID, , , 2)
 		waitAndProcessSaveDialog()
 		waitForSaveDialogToClose()
 		
-		Clipboard=%title%`r`n%ClipBoard%
-		
+		clipboard := title "`r`n" clipboard
+				
 		flushLogAndExit()
 	}
 }

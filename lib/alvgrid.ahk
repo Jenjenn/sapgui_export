@@ -6,24 +6,15 @@
 ;alvgrid_export_images.at[1].ihandle := LoadPicture("signature/western_menu_inverted.png")
 
 
-findExport(winID, parentclass, byref type_found=""){
-	/*
-		parentclass here is an object with properites
-		obtained via lib/helpers.ahk:getControlProperties
-	*/
+; parent_control is an MyControl object
+findExport(parent_control, byref type_found := "")
+{
+	appendLog("export search in control '" . parent_control.classnn . "'")
 	
-	appendLog("export search in control '" . parentclass.classnn . "'")
-	
-	;get the search area
-	;x1 := parentclass.x, x2 := parentclass.x + parentclass.w
-	;y1 := parentclass.y, y2 := parentclass.y + parentclass.h
-	
-	;construct the filenames
-	;TODO : preload/cache the images in the helpers.ahk file
 	elements := []
 	
-	
-	if (InStr(parentclass.classnn, "ToolbarWindow")){
+	if (parent_control.wclass == "ToolbarWindow")
+	{
 		elements.push("tbw_exp_drop")
 		elements.push("tbw_exp_btn")
 	}
@@ -31,30 +22,25 @@ findExport(winID, parentclass, byref type_found=""){
 		elements.push("at_exp_btn")
 	}
 	
-	
 	for i, elem in elements {
-		xy := locateGuiElementWithinParent(winID, parentclass, elem)
-		if (!ErrorLevel){
-			;found
+		xy := locateElementWithinControl(parent_control, elem)
+		if (xy){
 			type_found := getGuiElementType(elem)
-			appendLog("export of type '" . type_found . "' at x,y:" . xy.x . "," . xy.y)
+			appendLog("export type '" type_found "' at x,y:" xy.x "," xy.y)
 			return xy
 		}
 	}
 	
-	;not found
-	ErrorLevel := 1
+	; not found
 	appendLog("no export found")
 	return ""
 }
 
 
-waitForExportDropButton(winID, control_to_search, timeout=5){
+waitForExportDropButton(winID, control_to_search, timeout := 5){
 	
 	start_time := A_TickCount
 	timeout := timeout * 1000
-	
-	coord := getControlProperties(winID, control_to_search)
 	
 	;control should exist
 	if (ErrorLevel){
@@ -63,8 +49,10 @@ waitForExportDropButton(winID, control_to_search, timeout=5){
 	}
 	
 	;define search area
-	x := coord.x, x2 := coord.x + coord.w
-	y := coord.y, y2 := coord.y + coord.y
+	x := control_to_search.x
+	x2 := control_to_search.x + control_to_search.w
+	y := control_to_search.y
+	y2 := control_to_search.y + control_to_search.y
 	
 	while ((A_TickCount - start_time) < timeout){
 		
@@ -74,7 +62,7 @@ waitForExportDropButton(winID, control_to_search, timeout=5){
 			return
 		}
 		
-		sleep, 5
+		sleep(5)
 	}
 	
 	ErrorLevel := 1
@@ -82,44 +70,40 @@ waitForExportDropButton(winID, control_to_search, timeout=5){
 	
 }
 
-getToolbarWindowForALVGrid(winID, alvgridnn){
+getToolbarWindowForALVGrid(winID, alvgrid){
 /*
 	TODO:
 	only elect toolbars which have a lower y value (i.e. above the alvgrid)
 */
 	
-	appendLog("getting ToolbarWindow for '" . alvgridnn . "'")
+	appendLog("getting ToolbarWindow for '" . alvgrid.classnn . "'")
 	
-	toolbar_windows := getClassNNByClass(winID, "ToolbarWindow")
+	toolbar_windows := getControlsByClass(winID, "ToolbarWindow")
 	
-	if (ErrorLevel){
-		appendLog("no ToolbarWindows found")
+	if (!toolbar_windows.length)
+	{
+		appendLog("no ToolbarWindow found")
 		return ""
 	}
-	appendLog("found '" . toolbar_windows.Length() . "' ToolbarWindows")
-	
-	;no toolbar found, set error level and return
-	if (toolbar_windows.Length() = 0){
-		ErrorLevel := 1
-		return
-	}
+
+	appendLog("found '" . toolbar_windows.length . "' ToolbarWindows")
 	
 	;exactly one toolbar is found
-	if (toolbar_windows.Length() = 1){
-		ErrorLevel := 0
+	if (toolbar_windows.Length = 1)
+	{
 		return toolbar_windows[1]
 	}
 	
 	;multiple, determine the most appropriate choice based on distance
 	;get the distance between the top-left corners of the grid and the first toolbar
 	
-	d1 := getDistanceBetweenControls(winId, alvgridnn, toolbar_windows[1])
+	d1 := alvgrid.getDistance(toolbar_windows[1])
 	closest := toolbar_windows[1]
 	
 	i := 2
 	appendLog("'" . toolbar_windows[1] . "' is " . d1 . " units away")
-	while (i <= toolbar_windows.length()){
-		d2 := getDistanceBetweenControls(winId, alvgridnn, toolbar_windows[i])
+	while (i <= toolbar_windows.length){
+		d2 := alvgrid.getDistance(toolbar_windows[i])
 		appendLog("'" . toolbar_windows[i] . "' is " . d2 . " units away")
 		
 		if (d2 < d1){
@@ -129,17 +113,14 @@ getToolbarWindowForALVGrid(winID, alvgridnn){
 		i++
 	}
 	
-	appendLog("returning '" . closest . "'")
+	appendLog("returning '" . closest.classnn . "'")
 	
-	ErrorLevel := 0
 	return closest
-	
 }
 
-unhideStandardALVToolbar(winID, alv_toolbarnn)
+unhideStandardALVToolbar(winID, alv_toolbar)
 {
-	
-	toolbar := getControlProperties(winID, alv_toolbarnn)
+	throw Exception ("not supported yet.")
 	
 	tx := toolbar.x, ty = toolbar.y,
 	tx2 := toolbar.x + toolbar.w, ty2 := toolbar.y + toolbar.h
@@ -160,97 +141,110 @@ unhideStandardALVToolbar(winID, alv_toolbarnn)
 		return
 	}
 	
-	;we found an unhide button, so we need to click it.
+	; we found an unhide button, so we need to click it.
 	moveClickRestore(winID, coord.x + 5, coord.y + 5, False)
 	
-	;wait for the toolbar to expand, this is unfortunately a dialog step
+	; wait for the toolbar to expand, this is unfortunately a dialog step
 	waitForExportDropButton(winID, alv_toolbarnn)
 	
 }
 
 
-clickAppToolbarExport(winID){
+clickAppToolbarExport(winID)
+{
 
 	appendLog("trying the export button in the standard AppToolbar")
 	
-	t := getControlProperties(winID, "AppToolbar")
+	app_tb := MyControl.new(ControlGetHwnd("AppToolbar", winID))
 	
 	if (ErrorLevel){
 		appendLog("couldn't find the standard toolbar, 'AppToolbar'")
-		return
+		return false
 	}
 	
-	appendLog("AppToolbar found at x,y:" . t.x . "," . t.y . " with w,h:" . t.w . "," . t.y)
+	appendLog("AppToolbar at x,y:" app_tb.x . "," app_tb.y " , w,h:" app_tb.w "," app_tb.h)
 	
-	cxy := findExport(winID, t)
+	app_tb_export := findExport(app_tb)
 	
-	if (ErrorLevel){
-		appendLog("couldn't find the export button on the 'AppToolbar' toolbar")
-		return
+	if (!app_tb_export){
+		appendLog("couldn't find the export button in 'AppToolbar'")
+		return false
 	}
 	
-	;we should see the export button in the standard toolbar now
-	cx := cxy.x + 5, cy := cxy.y + 5
+	; we should see the export button in the standard toolbar now
+	cx := app_tb_export.x + 5
+	cy := app_tb_export.y + 5
 	appendLog("ControlClick to x,y:" . cx . "," . cy)
-	CoordMode, Mouse, Window
-	ControlClick, x%cx% y%cy%, ahk_id %winID%, , , 2
+	CoordMode("Mouse", "Client")
+	ControlClick("X" . cx . " Y" . cy, winID, , , 2)
 	
-	ErrorLevel := 0
+	return true
 }
 
-processALVGrid(winID, alvgrid_nn){
+processALVGrid(winID, alvgrid){
 	
-	appendLog("processing ALVGrid: '" . alvgrid_nn . "'")
-	
-	;first we try the nearby ToolbarWindow:
-	toolbar_windownn := getToolbarWindowForALVGrid(winID, alvgrid_nn)
-	
-	if (!ErrorLevel){
-		;found a ToolbarWindow
-		t := getControlProperties(winID, toolbar_windownn)
-		
-		appendLog("ToolbarWindow: " . t.classnn . "," . t.x . "," . t.y . "," . t.w . "," . t.h)
-		
-		;ensure the standard ALV buttons are showing (i.e. ST05 hides them by default)
-		unhideStandardALVToolbar(winID, t.classnn)
-		
-		;look for an export button
-		eb := findExport(winID, t, btype)
-		
-		if (ErrorLevel){
-			appendLog("export not found within control '" . t.classnn . "'")
-			goto, StandardToolbar
-		}
-		else
-			appendLog("export found in '" . t.classnn . "' ,type '" . btype . "'")
-		
-		ErrorLevel := 0
-		
-		;at this point we should see an export drop down button on the toolbar, click it
-		moveClickRestore(winID, eb.x + 5, eb.y + 5, tbcname)
-		
-		
-		if (btype = "dd_button"){
-			;Wait for that silly dialog box/menu to appear
-			appendLog("waiting for #32768")
-			WinWait, ahk_class #32768, , 4
-			
-			if (ErrorLevel){
-				appendLog("timeout waiting for #32768; exiting")
-				flushLogAndExit()
-			}
-			appendLog("#32768 is visible")
+	appendLog("processing ALVGrid: '" . alvgrid.classnn . "'")
 
-			;send an 'l' to bring up the local file dialog box using the toolbar class name we obtained earlier
-			ControlSend, %tbcname%, l, ahk_id %winID%
-		}
-		
-		return
+	ErrorLevel := 0
+	
+	; first we try the nearby ToolbarWindow:
+	toolbar_window := getToolbarWindowForALVGrid(winID, alvgrid)
+
+	if (!toolbar_window)
+	{
+		appendLog("No ToolbarWindow found")
+		goto StandardToolbar
 	}
 	
-	StandardToolbar:
-	;try the standard toolbar
+	; found a ToolbarWindow
+		
+	appendLog(toolbar_window.classnn . ": " 
+		. toolbar_window.x . "," . toolbar_window.y . "--" 
+		. toolbar_window.w . "x" . toolbar_window.h)
+		
+	; ensure the standard ALV buttons are showing (i.e. ST05 hides them by default)
+	; TODO: unhideStandardALVToolbar(toolbar_window)
+		
+	; look for an export button
+	eb := findExport(toolbar_window, btype)
 	
+	if (!eb){
+		appendLog("export not found within '" toolbar_window.classnn "'")
+		goto StandardToolbar
+	}
+
+	; found an export button
+
+	appendLog("export found in '" toolbar_window.classnn "' , type '" btype "'")
+		
+	; at this point we should see an export drop down button on the toolbar, click it
+	moveClickRestore(winID, eb.x + 5, eb.y + 5, tb_hwnd)
+		
+	if (btype = "dd_button")
+	{
+		;Wait for that silly dialog box/menu to appear
+		appendLog("waiting for #32768")
+		found := WinWait( "ahk_class #32768", , 5)
+		
+		if (!found){
+			appendLog("timeout waiting for #32768")
+			ErrorLevel := 1
+			return
+		}
+		appendLog("#32768 is visible")
+
+		; send an 'l' to bring up the local file dialog box using the toolbar class name we obtained earlier
+		ControlSend("l", tb_hwnd)
+	}
+
+	; if we made it this far, we should now be waiting for the 
+	; "Save list in file..." dialog box
+	
+	
+	return
+	
+	StandardToolbar:
+	; try the standard toolbar
 	clickAppToolbarExport(winID)
 	
 	return

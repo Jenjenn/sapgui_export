@@ -70,23 +70,18 @@ st12_findEdgeRight(byref pbm, x, y, num_checks, byref x_edge){
 }
 
 st12_findCallStackArea(byref pbm, alvx, alvy, byref stack_left, byref stack_right){
-/*
-	WIP
-*/
-	;static stack_area_color = 0xf8e5c8
-	static stack_area_color = 0xfff8e5c8
+
+	; static stack_area_color = 0xf8e5c8
 	static sy_offset := 30
 	
 	search_x := alvx + 100, search_y := alvy + 30
 	
 	appendLog("looking for the call stack area right of x=" . search_x . " and at y=" . search_y)
 	
-	CoordMode, Pixel, Window
+	CoordMode("Pixel", "Window")
 	
-	;get the left side
-	PixelSearch, x1, , % search_x, % search_y, % search_x + 800, % search_y + 1, 0xf8e5c8, , Fast RGB
-	;st12_findColorRight(search_x, search_y, stack_area_color)
-	
+	; get the left side
+	PixelSearch(x1, y1, search_x, search_y, search_x + 800, search_y + 1, 0xf8e5c8)	
 	
 	if (ErrorLevel){
 		appendLog("couldn't find the left side of the stack area")
@@ -96,8 +91,8 @@ st12_findCallStackArea(byref pbm, alvx, alvy, byref stack_left, byref stack_righ
 	appendLog("left side of call stack found at " . x1)
 	
 	
-	;look down until we find an edge so we can then move right without
-	;worrying about the call stack characters getting in the way
+	; look down until we find an edge so we can then move right without
+	; worrying about the call stack characters getting in the way
 	st12_findEdgeDown(pbm, x1, alvy + sy_offset, 40, celly)
 	
 	if (ErrorLevel){
@@ -113,7 +108,8 @@ st12_findCallStackArea(byref pbm, alvx, alvy, byref stack_left, byref stack_righ
 		return
 	}
 	
-	stack_left := x1, stack_right := x2
+	stack_left := x1
+	stack_right := x2
 	
 	appendLog("stack area is between x=" . stack_left . " and x=" . stack_right)
 }
@@ -122,12 +118,12 @@ st12_copyByALVHeader(win_id, start_x, end_x, y){
 	
 	moveClickDragRestore(start_x, y, end_x, y)
 	
-	clipboard :=
+	clipboard := ""
 	
 	;Send {Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}
-	Send {Ctrl Down}c{Ctrl Up}
+	Send("{Ctrl Down}c{Ctrl Up}")
 	startt := A_tickcount
-	ClipWait, 5
+	ClipWait(5)
 	delta := A_tickcount - startt
 	appendLog("waited " . delta . " ms for clipboard data")
 }
@@ -163,7 +159,7 @@ st12_copyCallStack(win_id){
 	*/
 	static alv_name := "SAPALVGrid2"
 	
-	alvgrid := getControlProperties(win_id, alv_name)
+	alvgrid := MyControl.new(ControlGetHwnd(alv_name, win_id))
 	
 	if (ErrorLevel){
 		appendLog("'" . alv_name . "' not found")
@@ -251,13 +247,13 @@ st12_copyABAPTraceScreen(win_id){
 		}
 	}
 	
-	clipboard :=
+	clipboard := ""
 	;get the regular output
-	Send, !sxl
+	Send("!sxl")
 	waitAndProcessSaveDialog()
 	
 	;wait for the clipboard to be populated
-	ClipWait, 10
+	ClipWait(10)
 	
 	screen_out := clipboard
 	

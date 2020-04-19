@@ -37,54 +37,74 @@
 Global SUPPORTED_THEMES := ["blue_crystal","signature"]
 
 ;preload the visual elements of SAPGUI
-Global sapgui_elements := {}
+Global sapgui_elements := {
+	; the export drop down button which appears in ToolbarWindow controls
+	tbw_exp_drop: {
+		etype: "dd_button",
+		blue_crystal: {
+			handles: [
+				LoadPicture("blue_crystal/western_tbw_drop.png"),
+				LoadPicture("blue_crystal/eastern_tbw_drop.png")
+			]
+		},
+		signature: {
+			handles: [
+				LoadPicture("signature/western_tbw_drop.png"),
+				LoadPicture("signature/eastern_tbw_drop.png")
+			]
+		}
+		; put new themes here
+	},
+
+	; the export button which appears in ToolbarWindow controls
+	tbw_exp_btn: {
+		etype: "button",
+		blue_crystal: {
+			handles: [
+				LoadPicture("blue_crystal/western_tbw_button.png"),
+				LoadPicture("blue_crystal/eastern_tbw_button.png")
+			]
+		},
+		signature: {
+			handles: [
+				LoadPicture("signature/western_tbw_button.png"),
+				LoadPicture("signature/eastern_tbw_button.png")
+			]
+		}
+		; put new themes here
+	},
+
+	; the export button which appears in ApplicationToolbar controls
+	at_exp_btn: {
+		etype: "button",
+		blue_crystal: {
+			handles: [
+				LoadPicture("blue_crystal/western_at_button.png"),
+				LoadPicture("blue_crystal/eastern_at_button.png")
+			]
+		},
+		signature: {
+			handles: [
+				LoadPicture("signature/western_at_button.png"),
+				LoadPicture("signature/eastern_at_button.png")
+			]
+		}
+		; put new themes here
+	},
+
+	save_list_window: {
+		title: "Save list in file..."
+	},
+
+	save_list_rb: {
+		etype: "rb",
+		classnn: "Afx:.{8}:b\d{1,}",
+		classnn_is_regex: true
+	}
 	
-	;the export button which appears in ToolbarWindow controls
-	;sapgui_elements.tbw_exp_drop := { etype:"dd_button" }
-	sapgui_elements.tbw_exp_drop := {}
+	; put new GUI elements here
+}
 	
-		sapgui_elements.tbw_exp_drop.etype := "dd_button" 
-	
-		sapgui_elements.tbw_exp_drop.blue_crystal := { handles:[] }
-		sapgui_elements.tbw_exp_drop.blue_crystal.handles[1] := LoadPicture("blue_crystal/western_tbw_drop.png")
-		sapgui_elements.tbw_exp_drop.blue_crystal.handles[2] := LoadPicture("blue_crystal/eastern_tbw_drop.png")
-	
-		sapgui_elements.tbw_exp_drop.signature := { handles:[] }
-		sapgui_elements.tbw_exp_drop.signature.handles[1] := LoadPicture("signature/western_tbw_drop.png")
-		sapgui_elements.tbw_exp_drop.signature.handles[2] := LoadPicture("signature/eastern_tbw_drop.png")
-		
-		;put new themes here
-		
-	
-	;the export drop down button which appears in ToolbarWindow controls
-	sapgui_elements.tbw_exp_btn := { etype:"button" }
-	
-		sapgui_elements.tbw_exp_btn.blue_crystal := { handles:[] }
-		sapgui_elements.tbw_exp_btn.blue_crystal.handles[1] := LoadPicture("blue_crystal/western_tbw_button.png")
-		sapgui_elements.tbw_exp_btn.blue_crystal.handles[2] := LoadPicture("blue_crystal/eastern_tbw_button.png")
-		
-		sapgui_elements.tbw_exp_btn.signature := { handles:[] }
-		sapgui_elements.tbw_exp_btn.signature.handles[1] := LoadPicture("signature/western_tbw_button.png")
-		sapgui_elements.tbw_exp_btn.signature.handles[2] := LoadPicture("signature/eastern_tbw_button.png")
-		
-		;put new themes here
-		
-	
-	;the export button which appears in ApplicationToolbar controls
-	sapgui_elements.at_exp_btn := { etype:"button" }
-	
-		sapgui_elements.at_exp_btn.blue_crystal := { handles:[] }
-		sapgui_elements.at_exp_btn.blue_crystal.handles[1] := LoadPicture("blue_crystal/western_at_button.png")
-		sapgui_elements.at_exp_btn.blue_crystal.handles[2] := LoadPicture("blue_crystal/eastern_at_button.png")
-		
-		sapgui_elements.at_exp_btn.signature := { handles:[] }
-		sapgui_elements.at_exp_btn.signature.handles[1] := LoadPicture("signature/western_at_button.png")
-		sapgui_elements.at_exp_btn.signature.handles[2] := LoadPicture("signature/eastern_at_button.png")
-		
-		;put new themes here
-		
-		
-	;add new GUI elements here
 
 getSapGuiTheme()
 {
@@ -100,156 +120,70 @@ getSapGuiTheme()
 
 }
 
-
-getControlProperties(winID, classnn){
-	
-	ControlGetPos, x, y, w, h, %classnn%, ahk_id %winID%
-	ControlGetText, ctext, %classnn%, ahk_id %winID%
-	
-	;check we found something
-	if (x = ""){
-		ErrorLevel := 1
-		return ""
-	}
-	
-	cntl := {}
-	cntl.parentWinID := winID
-	cntl.classnn := classnn
-	cntl.text := ctext
-	cntl.x := x
-	cntl.y := y
-	cntl.w := w
-	cntl.h := h
-	
-	ErrorLevel := 0
-	return cntl
-}
-
-getDistanceBetweenControls(win_id, c1, c2){
-/*
-	Accepts classnn values
-	returns the distance between the top left corners of two controls
-*/
-	ControlGetPos, x1, y1, , , %c1%, ahk_id %win_id%
-	ControlGetPos, x2, y2, , , %c2%, ahk_id %win_id%
-	
-	return sqrt( (x1 - x2)**2 + (y1 - y2)**2 )
-}
-
-getClassNNByClass(winID, partialclass, partialtext="")
+getControlByClassNN(win_id, classnn)
 {
-	/*
-		Obtains the ClassNN of a controls which contain
-		partialclass in the Control ClassNN and
-		partialtext in the Control Text
-	*/
-	
-	appendLog("looking for controls where ClassNN contains '" . partialclass . "'")
-	
-	WinGet, controls, ControlList, ahk_id %winID%
-	;MsgBox %controls%
-	
-	Results := []
-	
-	Loop, Parse, controls, `n
-	{
-		cname = %A_LoopField%
-		
-		;I only want visible controls (for now)
-		ControlGet, isvisible, Visible, , %cname%, ahk_id %winID%
-		if (!isvisible)
-		continue
-		
-		if RegExMatch(cname, partialclass . "\d{1,}")
-		{
-			ControlGetText, ctext, %cname%, ahk_id %winID%
-			
-			if (partialtext = "" OR InStr(ctext, partialtext))
-			{
-				appendLog("found '" . cname . "'")
-				Results.push(cname)
-			}
-		}
-	}
-	
-	if (Results.length() = 0)
-	{
-		ErrorLevel := 1
-		Results := ""
-	}
-	else
-		ErrorLevel := 0
-	
-	
-	return Results
+	control_hwnd := ControlGetHwnd(classnn, win_id)
+	return MyControl.new(control_hwnd)
 }
 
-getControlByClassNN(winId, classnn)
-{
-	ControlGet, hwnd, HWND, , %classnn%, ahk_id %winID%
-
-	if (hwnd)
-	    return new MyControl(hwnd)
-
-	throw Exception("no such control with '" . classnn . "'")
-}
-
-getControlsByClass(winID, class_name)
+getControlsByClass(winID, class_name, use_regex := false)
 {
 	appendLog("looking for controls of class '" . class_name . "'")
 	
-	WinGet, all_controls, ControlList, ahk_id %winID%
-	
+	all_controls := WinGetControls(winID)
+
 	matching_controls := []
 	
-	Loop, Parse, all_controls, `n
-	{
-		classnn := A_LoopField
-		
-		if RegExMatch(classnn, "^" . class_name . "\d{1,}")
+	for i, classnn in all_controls
+	{	
+		if ( (use_regex AND RegExMatch(classnn, class_name))
+			OR RegExMatch(classnn, "^" . class_name . "\d{1,}") )
 		{
 			appendLog("found '" . classnn . "'")
-			matching_controls.push(getControlByClassNN(winId, classnn))
+			control_hwnd := ControlGetHwnd(classnn, winID)
+			a_control := MyControl.new(control_hwnd)
+			matching_controls.push(a_control)
 		}
 	}
 	
-	ErrorLevel := matching_controls.length() = 0 ? 1 : 0
+	ErrorLevel := matching_controls.length = 0 ? 1 : 0
 	return matching_controls
 }
 
 
-moveClickRestore(winID, winx, winy, byref clicked_classnn = ""){
+moveClickRestore(winID, winx, winy, byref clicked_class_hwnd := ""){
 	
 	;get the mouse position so we can restore it later
-	CoordMode, Mouse, Screen
-	MouseGetPos, mx, my
+	CoordMode("Mouse", "Screen")
+	MouseGetPos(mx, my)
 	
-	CoordMode, Mouse, Window
+	CoordMode("Mouse", "Window")
 	
-    Click, %winx%, %winy%
+    Click(winx, winy)
 	;sometimes we want to know what was clicked
-	MouseGetPos, , , , classnn
+	MouseGetPos(, , , clicked_class_hwnd, 2)
 	
-	CoordMode, Mouse, Screen
-	MouseMove, mx, my, 0
+	CoordMode("Mouse", "Screen")
+	MouseMove(mx, my, 0)
 }
 
 moveClickDragRestore(x_from, y_from, x_to, y_to){
 	
-	CoordMode, Mouse, Screen
-	MouseGetPos, mx, my
+	CoordMode("Mouse", "Screen")
+	MouseGetPos(mx, my)
 	
-	CoordMode, Mouse, Window
+	CoordMode("Mouse", "Window")
 	
-	MouseClickDrag, Left, x_from, y_from, x_to, y_to, 0
+	MouseClickDrag("Left", x_from, y_from, x_to, y_to, 0)
 	
-	CoordMode, Mouse, Screen
-	MouseMove, mx, my, 0
+	CoordMode("Mouse", "Screen")
+	MouseMove(mx, my, 0)
 }
 
 getGuiElementType(element_name){
-	appendLog("type of '" . element_name . "' = '" . (sapgui_elements[element_name]).etype . "'")
-	return (sapgui_elements[element_name]).etype
+	appendLog("type of '" element_name "' = '" 
+		. sapgui_elements.%element_name%.etype . "'")
+	return sapgui_elements.%element_name%.etype
 }
 
 locateGuiElement(winID, x1, y1, x2, y2, name){
@@ -266,59 +200,53 @@ locateGuiElement(winID, x1, y1, x2, y2, name){
 	;we need to know the theme to find the correct button
 	theme_pf := getSapGuiTheme()
 	
-	CoordMode, Pixel, Window
-	for i, image_handle in sapgui_elements[name][theme_pf].handles {
-		ImageSearch, found_x, found_y, x1, y1, x2, y2, *50 HBITMAP:*%image_handle%
+	CoordMode("Pixel", "Window")
+	for i, image_handle in sapgui_elements.%name%.%theme_pf%.handles {
+		found := ImageSearch(found_x, found_y, x1, y1, x2, y2, "*50 HBITMAP:*" . image_handle)
 		
-		if (!ErrorLevel){
-			;found
+		if (found){
 			coord.x := found_x, coord.y := found_y
 			appendLog("found element; returning x,y = " . coord.x . "," . coord.y)
 			return coord
 		}
 	}
 	
-	;not found
+	; not found
 	appendLog("element '" . name . "' not found")
-	ErrorLevel := 1
 	return ""
 	
 }
 
 
-locateGuiElementWithinParent(winID, parentcontrol, name){
-/*
-	parentcontrol is obtained from getControlProperties
-*/
-	appendLog("element '" . name . "' search in control '" . parentcontrol.classnn . "'")
+locateElementWithinControl(pc, name)
+{
+	appendLog("search for '" name "' in control '" pc.classnn "'")
 	
-	x1 := parentcontrol.x, x2 := parentcontrol.x + parentcontrol.w
-	y1 := parentcontrol.y, y2 := parentcontrol.y + parentcontrol.h
+	end_x := pc.x + pc.w, end_y := pc.y + pc.h
 	
-	appendLog("top left: " . x1 . "," . y1 "   bottom right: " . x2 . "," . y2)
+	appendLog("top left: " pc.x . "," pc.y "  bottom right: " end_x "," end_y)
 	
 	coord := {}
 	
-	;we need to know the theme to find the correct button
+	; we need to know the theme to find the correct button
 	theme_pf := getSapGuiTheme()
 	
-	CoordMode, Pixel, Window
-	for i, image_handle in sapgui_elements[name][theme_pf].handles {
-		ImageSearch, found_x, found_y, x1, y1, x2, y2, *50 HBITMAP:*%image_handle%
+	CoordMode("Pixel", "Client")
+	for i, image_handle in sapgui_elements.%name%.%theme_pf%.handles {
+		found := ImageSearch(found_x, found_y
+			, pc.x, pc.y, end_x, end_y
+			, "*50 HBITMAP:*" . image_handle)
 		
-		if (!ErrorLevel){
-			;found
+		if (found){
 			coord.x := found_x, coord.y := found_y
-			appendLog("found element; returning x,y = " . coord.x . "," . coord.y)
+			appendLog("found element; returning {x,y} = " . coord.x . "," . coord.y)
 			return coord
 		}
 	}
 	
-	;not found
+	; not found
 	appendLog("element '" . name . "' not found")
-	ErrorLevel := 1
 	return ""
-	
 }
 
 
@@ -339,3 +267,4 @@ Includes(arr, value)
 	}
 	return false
 }
+

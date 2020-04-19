@@ -1,33 +1,42 @@
 Class MyControl
 {
-    ;the window handle of the control
+    ; the window handle of the control
     __New(hwnd)
     {
+        if (!hwnd)
+            throw Exception("Can't create MyControl object: hwnd empty!")
+        
         this.hwnd := hwnd
     }
 
-    __Get(key)
+    __Get(name, params*)
     {
         this_hwnd := this.hwnd
-        switch key
+        switch name
         {
             Case "wclass":
-                WinGetClass, wclass, ahk_id %this_hwnd%
-                this.wclass := wclass
+                this.wclass := WinGetClass(this.hwnd)
+            Case "classnn":
+                this.classnn := ControlGetClassNN(this.hwnd)
             Case "x", "y", "w", "h":
-                ControlGetPos, x, y, w, h, , ahk_id %this_hwnd%
+                ControlGetPos(x, y, w, h, this.hwnd)
                 this.x := x
                 this.y := y
                 this.w := w
                 this.h := h
             Case "text":
-                ControlGetText, ctext, , ahk_id %this_hwnd%
-                this.text := ctext
+                this.text := ControlGetText(this.hwnd)
             Case "visible":
-                ControlGet, isvisible, Visible, , , ahk_id %this_hwnd%
-                this.visible := isvisible
+                this.visible := ControlGetVisible(this.hwnd)
             Default:
                 throw Exception("No such property or property not implemented yet.")
         }
+        return this.%name%
+    }
+
+    ; TODO: prevent static calls
+    getDistance(other_control)
+    {
+        return sqrt( (this.x - other_control.x)**2 + (this.y - other_control.y)**2)
     }
 }
