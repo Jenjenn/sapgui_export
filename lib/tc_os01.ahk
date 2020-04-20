@@ -43,8 +43,9 @@ copyLanCheckScreenDetails(winID)
 		Controls sent with ControlSend might be ignore or behave weirdly
 		if SAPGUI is making UI adjustments (like shading a button you just hovered over)
 	*/
-	
-	
+
+	cliptimeout := 10
+		
 	; Get the control of the header
 	header_control := getControlsByClass(winID, "Internet Explorer_Server").filter("visible", true)[1]
 	
@@ -52,23 +53,35 @@ copyLanCheckScreenDetails(winID)
 	; ControlFocus acts really weird here; SAPGUI doesn't know how to handle it properly
 	; So we use a ControlClick instead
 	ControlClick(header_control)
-	Sleep(15)
+
+	clipboard := ""
 	Send("{Ctrl Down}ac{Ctrl Up}")
-	Sleep(15)
-	
-	; save to clipboard and get rid of some whitespace
+	ClipWait(cliptimeout)
+
+	; save the copied text and get rid of some whitespace
 	output := clipboard
 	output := StrReplace(output, "`r`n")
 	output := RegExReplace(output, " {1,}", " ")
 	
-	; get the body text
+
+	; get the body which is an ALVGrid
 	body_control := getControlsByClass(winID, "SAPALVGrid").filter("visible", true)[1]
+
+	; put focus on the ALVGrid
 	ControlFocus(body_control)
-	
-	;Send, {Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}
-	ControlSend("{Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}", body_control)
-	
+
+	; this screen really doesn't like controlsend
+	; {Space} will *toggle* select the entire column
+	; so the first {Down} makes sure we don't have the entire column already selected
+	; and the second {Down} clears the selection
+	clipboard := ""
+	;ControlSend("{Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}", body_control)
+	Send("{Ctrl Down}{Down}{Space}c{Ctrl Up}")
+	ClipWait(cliptimeout)
+
+	;combine the copied text with the previously saved output
 	output := output "`r`n`r`n" clipboard
+	output := RegExReplace(output, "`r`n`r`n", "`r`n---`r`n")
 	
 	clipboard := output
 }
