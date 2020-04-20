@@ -9,6 +9,7 @@
 		> clicking an ALVGrid in a window different from the active window does not immediately make the ALVGrid the focus
 		  this causes the default "system -> list -> save" to trigger. Not intended
 		  WORKAROUND: check the control under the mouse as a backup if the current focus is blank
+		> STAD: add pipes/bars ('|') to the fields separated by only spaces.
 	
 	WIP:
 		image library to make looking for specific visual elements easier (have to account for theme and character set)
@@ -18,7 +19,9 @@
 		MEDIUM - ST13 -> Process Chain runtime Comparison (has 2 grids, top one has no export button T_T )
 		MEDIUM - ST12 -> the name of the ALVGrid in ST12 is not always SAPALVGrid2 -> make this generic
 		HARD - SQL summary Statement details (screen which shows fastest, slowest, average, calling source locations)
-		EASY - STAD: add pipes/bars ('|') to the fields separated by only spaces.
+		MEDIUM - SE16 : Do some processing on particular tables
+			(e.g. timestamps which are yyyymmddhhmmss -> yyyy/mm/dd hh:mm:ss)
+		
 		
 		EVEN POSSIBLE?? Get ahk to work through Remote Desktop connection
 		
@@ -40,13 +43,7 @@
 
 
 
-SetDefaultMouseSpeed 0
-
-/*	reducing SetKeyDelay will make the script execute faster, but the trade off is stability
-	Most of the time spent waiting is for the server to format the output.
-	There is little to no appreciable gain to changing this.
-*/
-;SetKeyDelay, 10
+SetDefaultMouseSpeed(0)
 
 
 /*	global control for postprocessing SAPGUI output
@@ -71,67 +68,23 @@ OnExit("ExitFunc")
 OnError("flushLogAndExit")
 
 #include lib/logging.ahk
-/*
-	clearLog()
-	appendLog(message)
-*/
 
 #include lib/MyControl.ahk
 
 #include lib/helpers.ahk
-/*
-	getSapGuiThemePrefix(winID)
-	getControlsByClass(winID, class_name)
-	moveClickRestore(winID, winx, winy, block=True, byref clicked_classnn = "")
-	findImage(x1, y1, x2, y2, name)
-*/
 
 #include lib/cb_main.ahk
-/*
-	cb_sapguiPostProcess(byref cb_with_newlines)
-	cb_excelPreProcess(byref cb_with_newlines)
-	cb_removeInitialHeader(byref cb_with_newlines)
-	cb_getTableStartEndHeader(byref cb_array, byref start_i_out, byref end_i_out, byref header_i_out)
-	cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_separator)
-	cb_repairWideTable(byref cb_with_newlines)
-	cb_removeWhiteSpace(byref cb_with_newlines)
-	cb_removeLeadingBar(byref cb_with_newlines)
-	cb_removeHorizontalLines(byref cb_with_newlines)
-	cb_formatSimple(byref cb_with_newlines)
-*/
 
+; ALVGrid elements
 #include lib/alvgrid.ahk
-/*
-	
-*/
 
+; transactions
 #include lib/tc_os01.ahk
-/*
-	whichLanCheckScreen(winID)
-	copyLanCheckScreenDetails(winID)
-	copyLanCheckScreen(winID)
-*/
-
 #include lib/tc_stad.ahk
-/*
-	copySTADcallDialog(winID)
-*/
-
 #include lib/tc_st12.ahk
-/*
-	
-*/
 
-
+; excel functionality
 #include lib/excel.ahk
-/*
-	excel_preProcess()
-*/
-
-
-
-
-
 
 sendSystemListSave(winID := 0)
 {

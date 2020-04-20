@@ -65,7 +65,7 @@ copyLanCheckScreenDetails(winID)
 	
 
 	; get the body which is an ALVGrid
-	body_control := getControlsByClass(winID, "SAPALVGrid").filter("visible", true)[1]
+	body_control := getControlsByClass(winID, "SAPALVGrid").filter((bc) => bc.visible)[1]
 
 	; put focus on the ALVGrid
 	ControlFocus(body_control)

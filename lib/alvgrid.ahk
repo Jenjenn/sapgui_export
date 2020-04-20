@@ -71,13 +71,11 @@ getToolbarWindowForALVGrid(winID, alvgrid)
 	
 	appendLog("getting ToolbarWindow for '" . alvgrid.classnn . "'")
 	
-	toolbar_windows := getControlsByClass(winID, "ToolbarWindow").filter("visible", true)
-
-	toolbar_windows := temp
+	toolbar_windows := getControlsByClass(winID, "ToolbarWindow").filter((tbw) => tbw.visible)
 	
 	if (!(toolbar_windows.length))
 	{
-		appendLog("no ToolbarWindow found")
+		appendLog("no visible ToolbarWindow found")
 		return ""
 	}
 
@@ -85,10 +83,8 @@ getToolbarWindowForALVGrid(winID, alvgrid)
 	
 	; exactly one toolbar is found
 	if (toolbar_windows.Length = 1)
-	{
 		return toolbar_windows[1]
-	}
-	
+		
 	; multiple, determine the most appropriate choice based on distance
 	; get the distance between the top-left corners of the grid and the first toolbar
 	

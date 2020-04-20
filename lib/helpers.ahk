@@ -264,13 +264,13 @@ ArrayIncludes(arr, v) {
 	return false
 }
 
-ArrayFilter(arr, prop, value ){
+ArrayFilter(arr, filter_func) {
     static _ := Array.prototype.DefineMethod("filter", Func("ArrayFilter"))
     out := []
-    for k, v in arr
+    for i, k in arr
     {
-        if (v.%prop% == value)
-        out.push(v)
+        if (filter_func.Call(k))
+            out.push(k)
     }
     return out
 }
