@@ -1,6 +1,6 @@
-;doesn't fire when a thread completes a hotkey
-;can we get to work when a thread finishes rather than the script actually closing?
-;for the time being use flushLogAndExit instead of just exit
+; doesn't fire when a thread completes a hotkey
+; can we get to work when a thread finishes rather than the script actually closing?
+; for the time being use flushLogAndExit instead of just exit
 ;OnExit("flushLogOnExit", -1)
 
 Global exec_log := ""
@@ -19,7 +19,7 @@ appendLog(mes, stack_offset := -1){
 	logger := Exception(".", stack_offset)
 	caller := Exception(".", stack_offset - 1)
 	
-	;indent formatting based on stack level
+	; indent formatting based on stack level
 	i := -1
 	e := Exception(".", i)
 	
@@ -34,7 +34,7 @@ appendLog(mes, stack_offset := -1){
 		offset .= "  "
 		depth--
 	}
-	;end of indent formatting
+	; end of indent formatting
 	
 	;SplitPath(InputVar [, OutFileName, OutDir, OutExtension, OutNameNoExt, OutDrive])
 	SplitPath(logger.file, fname)

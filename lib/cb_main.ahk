@@ -30,7 +30,7 @@ cb_getTableStartEndHeader(byref cb_array, byref start_i_out, byref end_i_out, by
 	
 	start_i_out := -1, end_i_out := -1
 	
-	;don't like enumeration loops, we might need to alter our index manually
+	; don't like enumeration loops, we might need to alter our index manually
 	i := 1, cb_rows := cb_array.MaxIndex()
 	while (i <= cb_rows){
 		
@@ -42,8 +42,8 @@ cb_getTableStartEndHeader(byref cb_array, byref start_i_out, byref end_i_out, by
 		
 			appendLog("potential border found at " . i)
 			
-			;found a potential table border
-			;the next line must begin with a bar '|' to be part of the table
+			; found a potential table border
+			; the next line must begin with a bar '|' to be part of the table
 			
 			
 			
@@ -96,7 +96,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 */
 	static num_needle := "O)(?<=\|) *(\d{1,3}(?:[,.]?\d{3})*(?:[,.]\d++)?+(?:E\+\d+)?) *(?=\|)"
 	
-	;we pull the 1st sub match (match 0 = the whole expression)
+	; we pull the 1st sub match (match 0 = the whole expression)
 	
 	static format_needle := "O)"
 /*
@@ -134,63 +134,63 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	. "|"
 	. "(?:(?<=\d)(\.|,)(?=\d*E\+\d+))"
 	
-	;IPv4 addresses can give us a false positive if all octets are three digits
+	; IPv4 addresses can give us a false positive if all octets are three digits
 	ignore_ip_add := "^\d{3}\.\d{3}\.\d{3}\.\d{3}$"
 	
 	
-	;output variables
+	; output variables
 	dec_separator := ""
 	thou_separator := ""
 	
-	position := 1			;current position in the input string
-	num_count := 0			;count of numbers in the input string
-	static max_nums := 8000 ;a timeout in case the number format search takes too long
-	dot_count := 0			;count of numbers with a dot as the separator
-	comma_count := 0		;count of numbers with a comma as the separator
-	static threshold := 100	;dot_count or comma_count must reach this value to be considered the winner
+	position := 1			; current position in the input string
+	num_count := 0			; count of numbers in the input string
+	static max_nums := 8000 ; a timeout in case the number format search takes too long
+	dot_count := 0			; count of numbers with a dot as the separator
+	comma_count := 0		; count of numbers with a comma as the separator
+	static threshold := 100	; dot_count or comma_count must reach this value to be considered the winner
 	
 	start_time := A_TickCount
 	
-	;TODO? Add a timeout here?
+	; TODO: Add a timeout here?
 	while (	position != 0 
 			AND dot_count < threshold 
 			AND comma_count < threshold){
 			
-		;look for numbers
+		; look for numbers
 		position := RegexMatch(cb_with_newlines, num_needle, num_mo, position)
 		
 		;MsgBox % position . "`r`n'" . num_mo.0 . "'"
 		
 		if (position){
 			
-			;we check for number format against match 1, but add to position based on match 0
+			; we check for number format against match 1, but add to position based on match 0
 			
-			;found a match, make sure it's not an exception
+			; found a match, make sure it's not an exception
 			if (RegexMatch(num_mo.1, ignore_ip_add)){
 				position += StrLen(num_mo.0)
 				continue
 			}
 			
-			;found a valid number
+			; found a valid number
 			num_count++
 			
 			;MsgBox % num_mo.1
 			
-			;found a number, check its format
+			; found a number, check its format
 			if (RegexMatch(num_mo.1, format_needle, mo)){
 				ErrorLevel := 0
 				
-				if (mo.1)			;three digits surrounded by two dots/commas
-					;the thousands separator is always the left one
+				if (mo.1)			; three digits surrounded by two dots/commas
+					; the thousands separator is always the left one
 					(mo.1 = ",") ? dot_count++ : comma_count++
 				
-				else if (mo.3)		;decimal separator followed by {1,2,4,5,...} digits
+				else if (mo.3)		; decimal separator followed by {1,2,4,5,...} digits
 					(mo.3 = ".") ? dot_count++ : comma_count++
 				
-				else if (mo.4)		;decimal separator preceeded by exactly one zero
+				else if (mo.4)		; decimal separator preceeded by exactly one zero
 					(mo.4 = ".") ? dot_count++ : comma_count++
 				
-				else if (mo.5)		;exponential
+				else if (mo.5)		; exponential
 					(mo.5 = ".") ? dot_count++ : comma_count++
 				
 				/*
@@ -206,7 +206,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 				. "`r`n$8 = " . mo.8
 				*/
 			}
-			;advance past the number we found
+			; advance past the number we found
 			position += StrLen(num_mo.0)
 		}
 		
@@ -231,7 +231,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	
 	;MsgBox % dot_count . ", " . comma_count
 
-}  ;cb_detectNumberFormat
+}  ; cb_detectNumberFormat
 
 cb_repairWideTable(byref cb_with_newlines){
 /*
@@ -253,7 +253,6 @@ cb_repairWideTable(byref cb_with_newlines){
 	> Look backwards for a really long line -> increases our confidence the row has been broken
 	> If we found a broken line, include the newline `r`n in the match so it can be removed
 */
-	;static needle := "(?<=\|)\r\n(?!\|)(?<=.{768}\r\n)"
 	static needle := "("
 	. "(?<=\|)\r\n(?!\|)(?!-------)(?<=.{768}\r\n)"
 	. ")|("
@@ -270,13 +269,13 @@ cb_repairWideTable(byref cb_with_newlines){
 	runtime := A_TickCount - start_time
 	appendLog(cnt . " replacements in " . runtime . " ms in cb_repairWideTable")
 
-}  ;cb_repairWideTable
+}  ; cb_repairWideTable
 
 
 cb_repairNewLineInTableCell(byref cb_with_newlines){
 	
-	;some of the cell contents use UNIX line endings (i.e. only \n)
-	;so make the \r quantifier "zero or one"
+	; some of the cell contents use UNIX line endings (i.e. only \n)
+	; so make the \r quantifier "zero or one"
 	static needle := "(?<!\|)(?<!-------)\r?\n(?!\|)(?!-------)"
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle, " ", cnt)
 	appendLog(cnt . " replacements in cb_repairNewLineInTableCell")

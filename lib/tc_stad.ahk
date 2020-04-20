@@ -36,7 +36,7 @@ class STAD
 			match_p += 1
 		}
 
-		appendLog("Making replacements at " . join(column_offsets, ","))
+		appendLog("Making replacements at " . column_offsets.join(","))
 
 		rep_cnt := 0
 		for i, col in column_offsets

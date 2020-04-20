@@ -62,7 +62,7 @@ Global debug_gdip := 1
 
 Global gdip_token := Gdip_Startup()
 
-ExitFunc(reason, code){
+ExitFunc(reason, code) {
 	Gdip_Shutdown(gdip_token)
 }
 
@@ -133,16 +133,17 @@ OnError("flushLogAndExit")
 
 
 
-sendSystemListSave(winID := 0){
-	;can we replace Send with ControlSend? SAPGUI seems to not like controlsend for this purpose
-	;But Send is okay here since there should be no delays (i.e. round trips with the server)
+sendSystemListSave(winID := 0)
+{
+	; can we replace Send with ControlSend? SAPGUI seems to not like controlsend for this purpose
+	; But Send is okay here since there should be no delays (i.e. round trips with the server)
 	
 	;ControlSend, , !y, ahk_id %winID%
 	;ControlSend, #32768, ytai, ahk_id %winID%
 	
 	
-	;S4 Hana cloud edition changes the shortcut chain from ytai -> ytss
-	;luckily there is no key conflict and we can just add the additional shortcut keys
+	; S4 Hana cloud edition changes the shortcut chain from ytai -> ytss
+	; luckily there is no key conflict and we can just add the additional shortcut keys
 	;Send, !ytai
 	Send("!ytaiss")
 	
@@ -154,18 +155,19 @@ waitAndProcessSaveDialog(timeout := 20)
 {
     win_id := WinWait(sapgui_elements.save_list_window.title, , timeout)
 	
-	if (!win_id){
+	if (!win_id) {
 		appendLog("'" sapgui_elements.save_list_window.title 
 			. "' didn't appear in " timeout "seconds, exiting")
 		flushLogAndExit()
 	}
 	
     ; "ControlSend", sadly, doesn't work on the window in this case
-	;appendLog("Clicking 'In the clipboard'")
+	; appendLog("Clicking 'In the clipboard'")
     ; preferred method ==> ControlClick("x25 y195", "Save list in file...", , , , "Pos")
 	; on older releases, the spacing is different and clicking in a specific position doesn't work
 	
-	; testing new method
+	; testing new method: get the classnn of the
+	; radio button control and use controlsend on it
 	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
 	ControlSend("{Up}", rb_control.hwnd)
 
@@ -185,8 +187,8 @@ waitForSaveDialogToClose(win_id, timeout := 30)
 	}
 }
 
-sapgui_postProcess(){
-	
+sapgui_postProcess()
+{
 	cb := clipboard
 	
 	cb_removeInitialHeader(cb)
@@ -194,7 +196,7 @@ sapgui_postProcess(){
 	
 	cb_repairWideTable(cb)
 	
-	;temporarily ignore needs work
+	; temporarily ignore needs work
 	;cb_repairNewLineInTableCell(cb)
 	
 	
@@ -208,12 +210,11 @@ sapgui_postProcess(){
 
 #If WinActive("ahk_exe saplogon.exe")
 ` Up::
-;KeyWait, Control
 
 	winID := WinGetID("A")
 	title := WinGetTitle(winID)
 	
-	;don't do anything if it's just the Logon window
+	; don't do anything if it's just the Logon window
 	if InStr(title, "SAP Logon")
 	{
 		flushLogAndExit()
@@ -222,66 +223,75 @@ sapgui_postProcess(){
 	clearLog()
 	appendLog("checking exception list")
 	
-	;In case we've already opened a "save list in file..." dialog
-	if InStr(title, "Save list in file..."){
+	; In case we've already opened a "save list in file..." dialog
+	if InStr(title, "Save list in file...")
+	{
 		waitAndProcessSaveDialog()
 		sapgui_postProcess()
 		flushLogAndExit()
 	}
 	
-	;fast log off
-	if (title = "Log Off"){
+	; fast log off
+	if (title = "Log Off")
+	{
 		appendLog("logging off")
 		CoordMode("Mouse", "Window")
 		ControlClick("x80 y110", winID, , , 2, "Pos")
 		flushLogAndExit()
 	}
 	
-	;Exception list
-	;these screens don't use ALV grids or the default key combination
-	;Or need some kind of special prep
+	; Exception list
+	; these screens don't use ALV grids or the default key combination
+	; Or need some kind of special prep
 	
-    ;ST12 Trace list
-    if (title = "Trace analyses fullscreen list"){
+    ; ST12 Trace list
+    if (title = "Trace analyses fullscreen list")
+	{
 		Send("!exl")
 		waitAndProcessSaveDialog()
 		flushLogAndExit()
 	}
-	;ST12 SQL Summary
-	else if (InStr(title, "SQL Summary - ") || InStr(title, "SQL Summary for Code Location ")){
+	; ST12 SQL Summary
+	else if (InStr(title, "SQL Summary - ") 
+		OR InStr(title, "SQL Summary for Code Location "))
+	{
 		Send("!exl")
 		waitAndProcessSaveDialog()
 		flushLogAndExit()
 	}
-    ;ST12 trace details
-    else if InStr(title, "ABAP Trace Per Call"){
+    ; ST12 trace details
+    else if InStr(title, "ABAP Trace Per Call")
+	{
 		st12_copyABAPTraceScreen(winID)
-		
 	}
-	;ST12 - Statistical Records
-	else if InStr(title, "Collected Statistical records for analysis"){
+	; ST12 - Statistical Records
+	else if InStr(title, "Collected Statistical records for analysis")
+	{
 		Send("!exl")
 		waitAndProcessSaveDialog()
 		flushLogAndExit()
 	}
-	;OS01 - LAN Check by Ping
-	else if InStr(title, "LAN Check by PING"){
+	; OS01 - LAN Check by Ping
+	else if InStr(title, "LAN Check by PING")
+	{
 		copyLanCheckScreen(winID)
 		flushLogAndExit()
 	}
-	;STAD main result screen
-	else if InStr(title, "SAP Workload: Single Statistical Records - Overview"){
+	; STAD main result screen
+	else if InStr(title, "SAP Workload: Single Statistical Records - Overview")
+	{
 		STAD.copyrecordsOverview(winID)
 	}
-	;STAD RFC subrecord dialog
+	; STAD RFC subrecord dialog
 	else if (InStr(title, "RFC: ") = 1) AND InStr(title, "Records")
-	     OR (InStr(title, "HTTP: ") = 1) AND InStr(title, "Records"){
+	    OR (InStr(title, "HTTP: ") = 1) AND InStr(title, "Records")
+	{
 		STAD.copyCallDialog(winID)
 	}
 	
 	appendLog("past exception list")
 	
-	;past exception list, check if we have an ALVGrid in focus
+	; past exception list, check if we have an ALVGrid in focus
 	cf := ControlGetFocus(winID)
 	
 	if (!cf)
@@ -302,10 +312,11 @@ sapgui_postProcess(){
 	if (cf.wclass == "SAPALVGrid")
 	{
 		processALVGrid(winID, cf)
-		if (!ErrorLevel){
-			
+		if (!ErrorLevel)
+		{
 			save_hwnd := waitAndProcessSaveDialog()
-			if (postprocess_sapgui){
+			if (postprocess_sapgui)
+			{
 				waitForSaveDialogToClose(save_hwnd)
 				
 				sapgui_postProcess()
@@ -317,12 +328,12 @@ sapgui_postProcess(){
 	DefaultKeyStrokes:
 	appendLog("sending default keystrokes")
 	
-	;Default save as keys
+	; Default save as keys
 	sendSystemListSave(winID)
 
 return
 	
-;end of sapgui
+; end of sapgui
 
 
 
@@ -338,7 +349,8 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;
 
 
-showGridsAndToolbars(){
+showGridsAndToolbars()
+{
 
 	winID := WinGetID("A")
 
@@ -398,18 +410,18 @@ return
 	clearLog()
 	appendLog("starting Excel hotkey")
 	
-	;We don't need the winID here since we can use the COM object
+	; We don't need the winID here since we can use the COM object
 	;WinGet, winID, ID, A
 	
-	;script must be running at the same privilege level as Excel (i.e. administrator)
+	; script must be running at the same privilege level as Excel (i.e. administrator)
 	; https://stackoverflow.com/a/43875164
 	xl := ComObjActive("Excel.Application")
 	
-	;copy clipboard and save a second copy to restore it later
+	; copy clipboard and save a second copy to restore it later
 	cb := clipboard
 	
 	appendLog("preprocessing Excel input")
-	;Excel configuration and preprocessing
+	; Excel configuration and preprocessing
 	excel_setSeparators(xl, cb)
 	excel_preProcess(cb)
 	appendLog("preprocessing done")
@@ -421,7 +433,7 @@ return
 	flushLogAndExit()
 	
 	return
-;end of Excel
+; end of Excel
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -445,7 +457,7 @@ return
 	flushLogAndExit()
 	
 	return
-;end of Notepad++
+; end of Notepad++
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -454,7 +466,7 @@ return
 #If WinActive("ahk_exe chrome.exe") && ( WinActive("Incident") || WinActive("Chat Incident") || WinActive("Solman Incident") || WinActive("SPC Incident"))
 ^q::
 	
-	;paste the clipboard but with non-breaking spaces instead of regular spaces
+	; paste the clipboard but with non-breaking spaces instead of regular spaces
 	nbsp := Chr(0x00A0)
 
 	cb := clipboard

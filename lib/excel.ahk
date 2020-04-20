@@ -39,7 +39,7 @@ excel_paste(byref xl, byref cb){
 	while (i < max_attempts){
 		try{
 			
-			;do a COM paste, it's synchronous so we don't have to do any waiting/sleeping
+			; do a COM paste, it's synchronous so we don't have to do any waiting/sleeping
 			xl.ActiveCell.PasteSpecial
 			clipboard := temp
 			appendLog("paste successful")
@@ -62,9 +62,9 @@ excel_preProcess(byref cb){
 	
 	cb_removeHorizontalLines(cb)
 	
-	;better solution might be to convert single | to tabs
-	;even better is to the use the header line to determine the 
-	;positions of the table bars and replace them specifically
+	; better solution might be to convert single | to tabs
+	; even better is to the use the header line to determine the 
+	; positions of the table bars and replace them specifically
 	cb_replaceSQLConcat(cb)
 	
 	cb_removeWhiteSpace(cb)

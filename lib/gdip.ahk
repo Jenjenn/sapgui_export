@@ -394,6 +394,20 @@ Gdip_BitmapFromHWND(hwnd)
 	return pBitmap
 }
 
+Gdip_BitmapFromHWNDClient(hwnd)
+{
+	Ptr := A_PtrSize ? "UPtr" : "UInt"
+	CreateRect( winRect, 0, 0, 0, 0 ) ;is 16 on both 32 and 64
+	DllCall( "GetClientRect", Ptr, hwnd, Ptr, &winRect )
+	Width := NumGet(winRect, 8, "UInt") - NumGet(winRect, 0, "UInt")
+	Height := NumGet(winRect, 12, "UInt") - NumGet(winRect, 4, "UInt")
+	hbm := CreateDIBSection(Width, Height), hdc := CreateCompatibleDC(), obm := SelectObject(hdc, hbm)
+	PrintWindow(hwnd, hdc, 0x3)
+	pBitmap := Gdip_CreateBitmapFromHBITMAP(hbm)
+	SelectObject(hdc, obm), DeleteObject(hbm), DeleteDC(hdc)
+	return pBitmap
+}
+
 ;#####################################################################################
 
 ; Function				CreateRectF
@@ -1699,6 +1713,7 @@ Gdip_GetPixel(pBitmap, x, y)
 
 Gdip_SetPixel(pBitmap, x, y, ARGB)
 {
+
 	return DllCall("gdiplus\GdipBitmapSetPixel", A_PtrSize ? "UPtr" : "UInt", pBitmap, "int", x, "int", y, "int", ARGB)
 }
 

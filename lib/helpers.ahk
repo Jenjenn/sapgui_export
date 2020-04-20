@@ -36,7 +36,7 @@
 
 Global SUPPORTED_THEMES := ["blue_crystal","signature"]
 
-;preload the visual elements of SAPGUI
+; preload the visual elements of SAPGUI
 Global sapgui_elements := {
 	; the export drop down button which appears in ToolbarWindow controls
 	tbw_exp_drop: {
@@ -105,19 +105,13 @@ Global sapgui_elements := {
 	; put new GUI elements here
 }
 	
-
+; returns the current SAPGUI theme or throws an error if the current theme is unsupported
 getSapGuiTheme()
 {
-	/*
-		Important to know the theme when searching for buttons
-		Colors are in RGB hex
-	*/
-
-	if (!includes(SUPPORTED_THEMES, SAPGUI_THEME))
+	if (!(SUPPORTED_THEMES.includes(SAPGUI_THEME)))
 		throw Exception ("Action unsupported for theme: " . SAPGUI_THEME)
 	
 	return SAPGUI_THEME
-
 }
 
 getControlByClassNN(win_id, classnn)
@@ -151,24 +145,24 @@ getControlsByClass(winID, class_name, use_regex := false)
 }
 
 
-moveClickRestore(winID, winx, winy, byref clicked_class_hwnd := ""){
-	
-	;get the mouse position so we can restore it later
+moveClickRestore(winID, winx, winy, byref clicked_class_hwnd := "")
+{
+	; get the mouse position so we can restore it later
 	CoordMode("Mouse", "Screen")
 	MouseGetPos(mx, my)
 	
 	CoordMode("Mouse", "Client")
 	
     Click(winx, winy)
-	;sometimes we want to know what was clicked
+	; sometimes we want to know what was clicked
 	MouseGetPos(, , , clicked_class_hwnd, 2)
 	
 	CoordMode("Mouse", "Screen")
 	MouseMove(mx, my, 0)
 }
 
-moveClickDragRestore(x_from, y_from, x_to, y_to){
-	
+moveClickDragRestore(x_from, y_from, x_to, y_to)
+{
 	CoordMode("Mouse", "Screen")
 	MouseGetPos(mx, my)
 	
@@ -180,13 +174,15 @@ moveClickDragRestore(x_from, y_from, x_to, y_to){
 	MouseMove(mx, my, 0)
 }
 
-getGuiElementType(element_name){
+getGuiElementType(element_name)
+{
 	appendLog("type of '" element_name "' = '" 
 		. sapgui_elements.%element_name%.etype . "'")
 	return sapgui_elements.%element_name%.etype
 }
 
-locateGuiElement(winID, x1, y1, x2, y2, name){
+locateGuiElement(winID, x1, y1, x2, y2, name)
+{
 /*
 	looks for visual elements from the element library:
 	example:
@@ -197,14 +193,15 @@ locateGuiElement(winID, x1, y1, x2, y2, name){
 	
 	coord := {}
 	
-	;we need to know the theme to find the correct button
+	; we need to know the theme to find the correct button
 	theme_pf := getSapGuiTheme()
 	
-	CoordMode("Pixel", "Window")
-	for i, image_handle in sapgui_elements.%name%.%theme_pf%.handles {
+	CoordMode("Pixel", "Client")
+	for i, image_handle in sapgui_elements.%name%.%theme_pf%.handles
+	{
 		found := ImageSearch(found_x, found_y, x1, y1, x2, y2, "*50 HBITMAP:*" . image_handle)
 		
-		if (found){
+		if (found) {
 			coord.x := found_x, coord.y := found_y
 			appendLog("found element; returning x,y = " . coord.x . "," . coord.y)
 			return coord
@@ -237,7 +234,7 @@ locateElementWithinControl(pc, name)
 			, pc.x, pc.y, end_x, end_y
 			, "*50 HBITMAP:*" . image_handle)
 		
-		if (found){
+		if (found) {
 			coord.x := found_x, coord.y := found_y
 			appendLog("found element; returning {x,y} = " . coord.x . "," . coord.y)
 			return coord
@@ -250,21 +247,30 @@ locateElementWithinControl(pc, name)
 }
 
 
-Join(arr, s)
-{
-	;static _ := Array.Join := Func("Join")
+ArrayJoin(arr, sep) {
+    static _ := Array.prototype.DefineMethod("join", Func("ArrayJoin"))
 	for k,v in arr
-	o.= s . v
-	return SubStr(o,StrLen(s)+1)
+		o.= sep . v
+	return SubStr(o,StrLen(sep)+1)
 }
 
-Includes(arr, value)
-{
+ArrayIncludes(arr, v) {
+	static _ := Array.prototype.DefineMethod("includes", Func("ArrayIncludes"))
 	for i, e in arr
 	{
-		if (e = value)
+		if (e == v)
 			return true
 	}
 	return false
 }
 
+ArrayFilter(arr, prop, value ){
+    static _ := Array.prototype.DefineMethod("filter", Func("ArrayFilter"))
+    out := []
+    for k, v in arr
+    {
+        if (v.%prop% == value)
+        out.push(v)
+    }
+    return out
+}

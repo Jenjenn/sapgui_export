@@ -46,21 +46,23 @@ copyLanCheckScreenDetails(winID)
 	
 	
 	; Get the control of the header
-	header_control := getControlsByClass(winID, "Internet Explorer_Server")[1]
+	header_control := getControlsByClass(winID, "Internet Explorer_Server").filter("visible", true)[1]
 	
 	; put focus on the header area
 	; ControlFocus acts really weird here; SAPGUI doesn't know how to handle it properly
 	; So we use a ControlClick instead
 	ControlClick(header_control)
+	Sleep(15)
 	Send("{Ctrl Down}ac{Ctrl Up}")
+	Sleep(15)
 	
 	; save to clipboard and get rid of some whitespace
 	output := clipboard
 	output := StrReplace(output, "`r`n")
 	output := RegExReplace(output, " {1,}", " ")
 	
-	;get the body text
-	body_control := getControlsByClass(winID, "SAPALVGrid")[1]
+	; get the body text
+	body_control := getControlsByClass(winID, "SAPALVGrid").filter("visible", true)[1]
 	ControlFocus(body_control)
 	
 	;Send, {Ctrl Down}{Down}{Space}c{Down}{Ctrl Up}
@@ -80,10 +82,10 @@ copyLanCheckScreen(winID)
 	
 	appendLog("entering copyLanCheckScreen")
 	
-	;we have to find out which screen we're on, the titles are the same for the most part
+	; we have to find out which screen we're on, the titles are the same for the most part
 	os01_screen := whichLanCheckScreen(winID)
 	
-	appendLog("I think I'm on screen %os01_screen%")
+	appendLog("I think I'm on screen " os01_screen)
 	
 	if (os01_screen = "serverlist"){
 		appendLog("executing 'serverlist' screen copy")
