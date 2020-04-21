@@ -3,7 +3,8 @@
 */
 
 
-cb_removeInitialHeader(byref cb_with_newlines){
+cb_removeInitialHeader(byref cb_with_newlines)
+{
 	/*
 		if there is a header such as:
 		
@@ -17,52 +18,14 @@ cb_removeInitialHeader(byref cb_with_newlines){
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle, , , 1)
 }
 
-cb_removeTrailingPage(byref cb_with_newlines){
+cb_removeTrailingPage(byref cb_with_newlines)
+{
 	static needle := "\r\nPage: *\d*$"
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle)
 }
 
-cb_getTableStartEndHeader(byref cb_array, byref start_i_out, byref end_i_out, byref header_i_out){
-/*
-	WIP
-*/
-	appendLog("looking for the start and end of a table")
-	
-	start_i_out := -1, end_i_out := -1
-	
-	; don't like enumeration loops, we might need to alter our index manually
-	i := 1, cb_rows := cb_array.MaxIndex()
-	while (i <= cb_rows){
-		
-		line := cb_array[i]
-		len := StrLen(line)
-		
-		if InStr(line, "----") = 1
-		AND InStr(line, "----", false, len - 5){
-		
-			appendLog("potential border found at " . i)
-			
-			; found a potential table border
-			; the next line must begin with a bar '|' to be part of the table
-			
-			
-			
-			i := cb_array.MaxIndex()
-		
-		}
-		
-		
-		
-		
-		
-		i++
-	}
-	
-	
-	
-}
-
-cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_separator){
+cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_separator)
+{
 
 /*
 	TODO: Some screens output a space as the thousands separator...
@@ -94,11 +57,11 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 	> look for an ANSI exponential
 	> look for zero or more spaces then look ahead for a bar
 */
-	static num_needle := "O)(?<=\|) *(\d{1,3}(?:[,.]?\d{3})*(?:[,.]\d++)?+(?:E\+\d+)?) *(?=\|)"
+	static num_needle := "(?<=\|) *(\d{1,3}(?:[,.]?\d{3})*(?:[,.]\d++)?+(?:E\+\d+)?) *(?=\|)"
 	
 	; we pull the 1st sub match (match 0 = the whole expression)
 	
-	static format_needle := "O)"
+	static format_needle := ""
 /*
 	two commas/periods separated by three numbers reveal the number format
 	> look for a comma/period
@@ -233,7 +196,8 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 
 }  ; cb_detectNumberFormat
 
-cb_repairWideTable(byref cb_with_newlines){
+cb_repairWideTable(byref cb_with_newlines)
+{
 /*
 	ALVGrid exports which are very wide lead to rows being broken up with a newline
 	This often happens when exporting the SQL cursor/plan caches of various DBs in DBACOCKPIT
@@ -272,7 +236,8 @@ cb_repairWideTable(byref cb_with_newlines){
 }  ; cb_repairWideTable
 
 
-cb_repairNewLineInTableCell(byref cb_with_newlines){
+cb_repairNewLineInTableCell(byref cb_with_newlines)
+{
 	
 	; some of the cell contents use UNIX line endings (i.e. only \n)
 	; so make the \r quantifier "zero or one"
@@ -282,7 +247,8 @@ cb_repairNewLineInTableCell(byref cb_with_newlines){
 }
 
 
-cb_removeWhiteSpace(byref cb_with_newlines){
+cb_removeWhiteSpace(byref cb_with_newlines)
+{
 	static needle := " *\| *"
 	
 	start_time := A_TickCount
@@ -293,7 +259,8 @@ cb_removeWhiteSpace(byref cb_with_newlines){
 	appendLog(rep_cnt . " replacements in " . runtime . " ms")
 }
 
-cb_removeLeadingBar(byref cb_with_newlines){
+cb_removeLeadingBar(byref cb_with_newlines)
+{
 	
 	start_time := A_TickCount
 
@@ -304,7 +271,8 @@ cb_removeLeadingBar(byref cb_with_newlines){
 	appendLog(rep_cnt . " removals in " . runtime . " ms")
 }
 
-cb_removeHorizontalLines(byref cb_with_newlines){
+cb_removeHorizontalLines(byref cb_with_newlines)
+{
 
 	start_time := A_TickCount
 	
@@ -321,7 +289,8 @@ cb_removeHorizontalLines(byref cb_with_newlines){
 	
 }
 
-cb_removeBlankLines(byref cb_with_newlines){
+cb_removeBlankLines(byref cb_with_newlines)
+{
 
 	start_time := A_TickCount
 	
@@ -340,12 +309,14 @@ cb_removeBlankLines(byref cb_with_newlines){
 	
 }
 
-cb_convertDateToNA(byref cb){
+cb_convertDateToNA(byref cb)
+{
 	static needle := "(\d\d)\.(\d\d)\.(\d\d\d\d)"
 	cb := RegExReplace(cb, needle, "$3/$2/$1")
 }
 
-cb_replaceSQLConcat(byref cb){
+cb_replaceSQLConcat(byref cb)
+{
 /*
 	SQL cache ouput may contain strings with concat operators -> ||
 	this messes with Excel's delimiting
@@ -355,6 +326,7 @@ cb_replaceSQLConcat(byref cb){
 	cb := RegexReplace(cb, needle, rep)
 }
 
-cb_replaceCharAtPos(byref cb, position, newchar){
+cb_replaceCharAtPos(byref cb, position, newchar)
+{
 	cb := RegexReplace(cb, ".", newchar, , 1, position)
 }

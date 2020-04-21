@@ -144,6 +144,59 @@ getControlsByClass(winID, class_name, use_regex := false)
 	return matching_controls
 }
 
+sendSystemListSave(winID := 0)
+{
+	; can we replace Send with ControlSend? SAPGUI seems to not like controlsend for this purpose
+	; But Send is okay here since there should be no delays (i.e. round trips with the server)
+	
+	;ControlSend, , !y, ahk_id %winID%
+	;ControlSend, #32768, ytai, ahk_id %winID%
+	
+	
+	; S4 Hana cloud edition changes the shortcut chain from ytai -> ytss
+	; luckily there is no key conflict and we can just add the additional shortcut keys
+	;Send, !ytai
+	Send("!ytaiss")
+	
+	waitAndProcessSaveDialog()
+	flushLogAndExit()
+}
+
+waitAndProcessSaveDialog(timeout := 20)
+{
+    win_id := WinWait(sapgui_elements.save_list_window.title, , timeout)
+	
+	if (!win_id) {
+		appendLog("'" sapgui_elements.save_list_window.title 
+			. "' didn't appear in " timeout "seconds, exiting")
+		flushLogAndExit()
+	}
+	
+    ; "ControlSend", sadly, doesn't work on the window in this case
+	; appendLog("Clicking 'In the clipboard'")
+    ; preferred method ==> ControlClick("x25 y195", "Save list in file...", , , , "Pos")
+	; on older releases, the spacing is different and clicking in a specific position doesn't work
+	
+	; testing new method: get the classnn of the
+	; radio button control and use controlsend on it
+	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
+	ControlSend("{Up}", rb_control.hwnd)
+
+	; doesn't always work unless we sleep for a bit
+	Sleep(15)
+	ControlSend("{Enter}", , win_id)
+
+	return win_id
+}
+
+waitForSaveDialogToClose(win_id, timeout := 30)
+{
+	if ( !WinWaitClose(win_id, , timeout) )
+	{
+		appendLog("download from app server timed out after " timeout " seconds")
+		flushLogAndExit()
+	}
+}
 
 moveClickRestore(winID, winx, winy, byref clicked_class_hwnd := "")
 {
@@ -211,7 +264,6 @@ locateGuiElement(winID, x1, y1, x2, y2, name)
 	; not found
 	appendLog("element '" . name . "' not found")
 	return ""
-	
 }
 
 
@@ -273,4 +325,9 @@ ArrayFilter(arr, filter_func) {
             out.push(k)
     }
     return out
+}
+
+StringLength(str) {
+	static _ := "".base.length := Func("StringLength")
+	return StrLen(str)
 }

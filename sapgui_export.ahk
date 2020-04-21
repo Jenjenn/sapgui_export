@@ -10,6 +10,7 @@
 		  this causes the default "system -> list -> save" to trigger. Not intended
 		  WORKAROUND: check the control under the mouse as a backup if the current focus is blank
 		> STAD: add pipes/bars ('|') to the fields separated by only spaces.
+		> ST12 -> the name of the ALVGrid in ST12 is not always SAPALVGrid2 -> make this generic
 	
 	WIP:
 		image library to make looking for specific visual elements easier (have to account for theme and character set)
@@ -17,7 +18,6 @@
 	TODO:
 		HARD - Oracle: table and index information dialogs (lots of annoying scrolling)
 		MEDIUM - ST13 -> Process Chain runtime Comparison (has 2 grids, top one has no export button T_T )
-		MEDIUM - ST12 -> the name of the ALVGrid in ST12 is not always SAPALVGrid2 -> make this generic
 		HARD - SQL summary Statement details (screen which shows fastest, slowest, average, calling source locations)
 		MEDIUM - SE16 : Do some processing on particular tables
 			(e.g. timestamps which are yyyymmddhhmmss -> yyyy/mm/dd hh:mm:ss)
@@ -45,14 +45,13 @@
 
 SetDefaultMouseSpeed(0)
 
-
-/*	global control for postprocessing SAPGUI output
-	Set this to 0 or false if you don't want output to be modified
-*/
-
+; current theme of SAPGUI
 Global SAPGUI_THEME := "blue_crystal"
 
-Global postprocess_sapgui := 1
+; set to false to not modify the clipboard after export
+Global postprocess_sapgui := true
+
+; will create images to the working directory, intended for debugging
 Global debug_gdip := 1
 
 #include lib/gdip.ahk
@@ -86,74 +85,24 @@ OnError("flushLogAndExit")
 ; excel functionality
 #include lib/excel.ahk
 
-sendSystemListSave(winID := 0)
-{
-	; can we replace Send with ControlSend? SAPGUI seems to not like controlsend for this purpose
-	; But Send is okay here since there should be no delays (i.e. round trips with the server)
-	
-	;ControlSend, , !y, ahk_id %winID%
-	;ControlSend, #32768, ytai, ahk_id %winID%
-	
-	
-	; S4 Hana cloud edition changes the shortcut chain from ytai -> ytss
-	; luckily there is no key conflict and we can just add the additional shortcut keys
-	;Send, !ytai
-	Send("!ytaiss")
-	
-	waitAndProcessSaveDialog()
-	flushLogAndExit()
-}
-
-waitAndProcessSaveDialog(timeout := 20)
-{
-    win_id := WinWait(sapgui_elements.save_list_window.title, , timeout)
-	
-	if (!win_id) {
-		appendLog("'" sapgui_elements.save_list_window.title 
-			. "' didn't appear in " timeout "seconds, exiting")
-		flushLogAndExit()
-	}
-	
-    ; "ControlSend", sadly, doesn't work on the window in this case
-	; appendLog("Clicking 'In the clipboard'")
-    ; preferred method ==> ControlClick("x25 y195", "Save list in file...", , , , "Pos")
-	; on older releases, the spacing is different and clicking in a specific position doesn't work
-	
-	; testing new method: get the classnn of the
-	; radio button control and use controlsend on it
-	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
-	ControlSend("{Up}", rb_control.hwnd)
-
-	; doesn't always work unless we sleep for a bit
-	Sleep(15)
-	ControlSend("{Enter}", , win_id)
-
-	return win_id
-}
-
-waitForSaveDialogToClose(win_id, timeout := 30)
-{
-	if ( !WinWaitClose(win_id, , timeout) )
-	{
-		appendLog("download from app server timed out after " timeout " seconds")
-		flushLogAndExit()
-	}
-}
 
 sapgui_postProcess()
 {
-	cb := clipboard
-	
-	cb_removeInitialHeader(cb)
-	cb_removeTrailingPage(cb)
-	
-	cb_repairWideTable(cb)
-	
-	; temporarily ignore needs work
-	;cb_repairNewLineInTableCell(cb)
-	
-	
-	clipboard := cb
+	if (postprocess_sapgui)
+	{
+		cb := clipboard
+		
+		cb_removeInitialHeader(cb)
+		cb_removeTrailingPage(cb)
+		
+		cb_repairWideTable(cb)
+		
+		; temporarily ignore needs work
+		;cb_repairNewLineInTableCell(cb)
+		
+		
+		clipboard := cb
+	}
 }
 
 
@@ -185,11 +134,11 @@ sapgui_postProcess()
 	}
 	
 	; fast log off
-	if (title = "Log Off")
+	if (title == "Log Off")
 	{
 		appendLog("logging off")
-		CoordMode("Mouse", "Window")
-		ControlClick("x80 y110", winID, , , 2, "Pos")
+		CoordMode("Mouse", "Client")
+		ControlClick("x80 y85", winID, , , 2, "Pos")
 		flushLogAndExit()
 	}
 	
@@ -227,7 +176,7 @@ sapgui_postProcess()
 	; OS01 - LAN Check by Ping
 	else if InStr(title, "LAN Check by PING")
 	{
-		copyLanCheckScreen(winID)
+		OS01.copyScreen(winID)
 		flushLogAndExit()
 	}
 	; STAD main result screen
@@ -334,7 +283,7 @@ KeyWait("Alt")
 
 	winID := WinGetID("A")
 
-	tb_windows := getControlsByClass(win_id, "ToolbarWindow")
+	tb_windows := getControlsByClass(win_id, "SAPALVGrid")
 	classes := ""
 	for i, e in tb_windows
 	{

@@ -1,7 +1,7 @@
 class STAD
 {
 
-	copyRecordsOverview(winID)
+	static copyRecordsOverview(winID)
 	{
 		appendLog("copying STAD records - overview")
 		Send("!ww")
@@ -15,13 +15,12 @@ class STAD
 
 	}
 
-	insertColumnDividers(byref stad_output)
+	static insertColumnDividers(byref stad_output)
 	{
 		static needle_header := "m)^\|Started.*?\|"
 		static needle_headings := "Server|Transaction|Program|T|Scr.|Wp"
 
-		static rep_left := "m)(?<=^\|.{"
-		static rep_right := "})."
+		static rep_pattern := ["m)(?<=^\|.{", "})."]
 
 		start_time := A_TickCount
 
@@ -30,18 +29,19 @@ class STAD
 
 		column_offsets := []
 		match_p := 1
+		header := header.value()
 
 		while (match_p := RegExMatch(header, needle_headings, , match_p)) {
 			column_offsets.push(match_p - 3)
-			match_p += 1
+			match_p++
 		}
 
-		appendLog("Making replacements at " . column_offsets.join(","))
+		appendLog("Adding " column_offsets.length " columns at " . column_offsets.join(","))
 
 		rep_cnt := 0
 		for i, col in column_offsets
 		{
-			stad_output := RegExReplace(stad_output, rep_left . col . rep_right, "|", reps)
+			stad_output := RegExReplace(stad_output, rep_pattern[1] . col . rep_pattern[2], "|", reps)
 			rep_cnt += reps
 		}
 
@@ -49,7 +49,7 @@ class STAD
 		appendLog(rep_cnt . " replacements in " . runtime . " ms")
 	}
 
-	copyCallDialog(winID)
+	static copyCallDialog(winID)
 	{
 		/*
 			We also want to include the Window Title here for clarity as it's

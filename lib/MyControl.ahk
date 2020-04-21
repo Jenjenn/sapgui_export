@@ -34,7 +34,6 @@ Class MyControl
         return this.%name%
     }
 
-    ; TODO: prevent static calls
     getDistance(other_control)
     {
         return sqrt( (this.x - other_control.x)**2 + (this.y - other_control.y)**2)

@@ -15,15 +15,15 @@
 */
 
 
-st12_findEdgeDown(byref pbm, x, y, num_checks, byref y_edge){
-
+st12_findEdgeDown(byref pbm, x, y, num_checks, byref y_edge)
+{
 	appendLog("looking for a color border below x,y:" . x . "," . y)
 	
 	max_y := y + num_checks
 	
 	; get the starting color
 	cc := Gdip_GetPixel(pbm, x, y)
-	appendLog("color at " x "," y "= " Format("{:#X}", cc))
+	appendLog("color at " x "," y " = " Format("{:#X}", cc))
 	
 	y++
 	next_c := Gdip_GetPixel(pbm, x, y)
@@ -33,7 +33,7 @@ st12_findEdgeDown(byref pbm, x, y, num_checks, byref y_edge){
 		next_c := Gdip_GetPixel(pbm, x, y)
 	} 
 	
-	appendLog("color at " x "," y "= " Format("{:#X}", next_c))
+	appendLog("color at " x "," y " = " Format("{:#X}", next_c))
 	if (y >= max_y)
 		return 0
 	
@@ -42,15 +42,15 @@ st12_findEdgeDown(byref pbm, x, y, num_checks, byref y_edge){
 	return 1
 }
 
-st12_findEdgeRight(byref pbm, x, y, num_checks, byref x_edge){
-
+st12_findEdgeRight(byref pbm, x, y, num_checks, byref x_edge)
+{
 	appendLog("looking for a color border right of x,y:" . x . "," . y)
 	
 	max_x := y + num_checks
 	
 	; get the starting color
 	cc := Gdip_GetPixel(pbm, x, y)
-	appendLog("color at " x "," y "= " Format("{:#X}", cc))
+	appendLog("color at " x "," y " = " Format("{:#X}", cc))
 	
 	x++
 	next_c := Gdip_GetPixel(pbm, x, y)
@@ -60,7 +60,7 @@ st12_findEdgeRight(byref pbm, x, y, num_checks, byref x_edge){
 		next_c := Gdip_GetPixel(pbm, x, y)
 	} 
 	
-	appendLog("color at " x "," y "= " Format("{:#X}", next_c))
+	appendLog("color at " x "," y " = " Format("{:#X}", next_c))
 	if (x >= max_x)
 		return 1
 	
@@ -69,8 +69,8 @@ st12_findEdgeRight(byref pbm, x, y, num_checks, byref x_edge){
 	return 1
 }
 
-st12_findCallStackArea(byref pbm, alvx, alvy, byref stack_left, byref stack_right){
-
+st12_findCallStackArea(byref pbm, alvx, alvy, byref stack_left, byref stack_right)
+{
 	; static stack_area_color = 0xf8e5c8
 	static sy_offset := 30
 	
@@ -117,8 +117,8 @@ st12_findCallStackArea(byref pbm, alvx, alvy, byref stack_left, byref stack_righ
 	return 1
 }
 
-st12_copyByALVHeader(win_id, start_x, end_x, y){
-	
+st12_copyByALVHeader(win_id, start_x, end_x, y)
+{
 	moveClickDragRestore(start_x, y, end_x, y)
 	
 	clipboard := ""
@@ -131,7 +131,8 @@ st12_copyByALVHeader(win_id, start_x, end_x, y){
 	appendLog("waited " . delta . " ms for clipboard data")
 }
 
-st12_processCallStackOutput(byref call_stacks){
+st12_processCallStackOutput(byref call_stacks)
+{
 /*
 	before --- after
 	     =     ^
@@ -155,19 +156,17 @@ st12_processCallStackOutput(byref call_stacks){
 	
 }
 
-st12_copyCallStack(win_id){
-	
-	/* TODO: name of the ALVGrid in ST12 is not always SAPALVGrid2
-		change this to a generic SAPALVGrid control by detecting the main control in the window
-	*/
-	static alv_name := "SAPALVGrid2"
-	
-	alvgrid := MyControl.new(ControlGetHwnd(alv_name, win_id))
-	
-	if (ErrorLevel){
-		appendLog("'" . alv_name . "' not found")
-		return
+st12_copyCallStack(win_id)
+{
+	alvgrid := getControlsByClass(win_id, "SAPALVGrid").filter((a) => a.visible)
+
+	if (!(alvgrid.length)){
+		appendLog("no visible SAPALVGrid found")
+		return ""
 	}
+
+	alvgrid := alvgrid[1]
+	appendLog("found " alvgrid.classnn)
 	
 	appendLog("taking screenshot of ST12")
 	pbm := Gdip_BitmapFromHWNDClient(win_id)
@@ -175,7 +174,6 @@ st12_copyCallStack(win_id){
 		appendLog("saving gdip bmp to file")
 		Gdip_SaveBitmapToFile(pbm, "debug_st12_copyCallStack.png")
 	}
-	
 	
 	
 	found := st12_findCallStackArea(pbm, alvgrid.x, alvgrid.y, stack_start, stack_end)
@@ -205,7 +203,8 @@ st12_copyCallStack(win_id){
 }
 
 
-st12_callStackEnabled(win_id){
+st12_callStackEnabled(win_id)
+{
 /*
 	When:
 		> the call stack is turned on
@@ -237,9 +236,53 @@ st12_callStackEnabled(win_id){
 	return false
 }
 
+st12_insertCallStacksIntoOutput(byref st12_output, call_stacks)
+{
+	static header_pattern := "m)^\|Call *?No\. "
+	static rep_pat := ["m)(?<=^.{", "}).{", "}"]
+	static table_border := "m)^-------*?------$"
 
-st12_copyABAPTraceScreen(win_id){
+	output := StrSplit(st12_output, "`r`n")
+	call_stacks := StrSplit(call_stacks, "`r`n")
+	cs_width := StrLen(call_stacks[1])
+
+	; 0 = not the table, 1 = table header, 2 = table body
+	cur_table_section := 0
 	
+	for i, line in output
+	{
+		if (RegexMatch(line, table_border)) {
+			appendlog("table divider found at line " i)
+			cur_table_section++
+			continue
+		}
+		
+		if (cur_table_section == 1) {
+			if (RegexMatch(line, header_pattern, header_match))
+				cs_start_col := StrLen(header_match.value()) + 1
+			else {
+				appendLog("Unexpected table header")
+				return false
+			}
+		}
+
+		if (cur_table_section == 2) {
+			call_stack := call_stacks.removeAt(1)
+			if (!call_stack) {
+				appendlog("ran out of call stack lines before all replacements could be made")
+				return false
+			}
+			output[i] := RegexReplace(output[i], rep_pat[1] cs_start_col rep_pat[2] cs_width rep_pat[3], call_stack, , 1)
+		}
+	}
+
+	st12_output := output.join("`r`n")
+	return true
+
+}
+
+st12_copyABAPTraceScreen(win_id)
+{
 	; try for call stack(s)
 	if (st12_callStackEnabled(win_id)){
 		; try to get the call stack
@@ -255,14 +298,16 @@ st12_copyABAPTraceScreen(win_id){
 	; get the regular output
 	Send("!sxl")
 	waitAndProcessSaveDialog()
-	
-	; wait for the clipboard to be populated
 	ClipWait(10)
+	st12_out := clipboard
 	
-	screen_out := clipboard
-	
-	clipboard := screen_out . "`r`n" . call_stacks
-	
+
+	if (call_stacks)
+	{
+		if (st12_insertCallStacksIntoOutput(st12_out, call_stacks))
+			clipboard := st12_out
+	}
+
 	flushLogAndExit()
 }
 
