@@ -238,7 +238,7 @@ st12_callStackEnabled(win_id)
 
 st12_insertCallStacksIntoOutput(byref st12_output, call_stacks)
 {
-	static header_pattern := "m)^\|Call *?No\. "
+	static header_pattern := "m)^\|Call *?(No\.|Number) "
 	static rep_pat := ["m)(?<=^.{", "}).{", "}"]
 	static table_border := "m)^-------*?------$"
 

@@ -49,7 +49,7 @@ Class OS01
 		cliptimeout := 10
 			
 		; Get the control of the header
-		header_control := getControlsByClass(winID, "Internet Explorer_Server").filter("visible", true)[1]
+		header_control := getControlsByClass(winID, "Internet Explorer_Server").filter((hc) => hc.visible)[1]
 		
 		; put focus on the header area
 		; ControlFocus acts really weird here; SAPGUI doesn't know how to handle it properly
