@@ -298,7 +298,7 @@ st12_copyABAPTraceScreen(win_id)
 	; get the regular output
 	Send("!sxl")
 	waitAndProcessSaveDialog()
-	ClipWait(10)
+	ClipWait(5)
 	st12_out := clipboard
 	
 

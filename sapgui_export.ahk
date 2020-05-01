@@ -45,6 +45,9 @@
 
 SetDefaultMouseSpeed(0)
 
+; some applications don't register a keystroke if it's not held down for long enough
+SetKeyDelay( , 0)
+
 ; current theme of SAPGUI
 Global SAPGUI_THEME := "blue_crystal"
 
@@ -346,13 +349,14 @@ return
 ^q::
 	
 	clearLog()
+	appendLog("Pasting into n++")
 	
-	cb := clipboard
+	;cb := clipboard
 
-	appendLog("add column dividers")
-	STAD.insertColumnDividers(cb)
+	;appendLog("add column dividers")
+	;STAD.insertColumnDividers(cb)
 
-	clipboard := cb
+	;clipboard := cb
 
 	;MsgBox % "ds = '" . ds . "' ts = '" . ts . "'"
 	
@@ -367,17 +371,19 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;
 #If WinActive("ahk_exe chrome.exe") && ( WinActive("Incident") || WinActive("Chat Incident") || WinActive("Solman Incident") || WinActive("SPC Incident"))
 ^q::
-	
+	clearLog()
+	appendlog("Pasting into BCP")
 	; paste the clipboard but with non-breaking spaces instead of regular spaces
 	nbsp := Chr(0x00A0)
 
 	cb := clipboard
-	clipboard := StrReplace(clipboard, " ", nbsp)
-	
+	clipboard := StrReplace(cb, " ", nbsp)
 	Send("^v")
 
-	sleep(10)
+	; need to wait for Chrome to read from the clipboard before switching it back
+	sleep(50)
 	clipboard := cb
+	flushLogAndExit()
 
 return
 
