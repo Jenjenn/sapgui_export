@@ -299,35 +299,3 @@ locateElementWithinControl(pc, name)
 }
 
 
-ArrayJoin(arr, sep) {
-    static _ := Array.prototype.DefineMethod("join", Func("ArrayJoin"))
-	for k,v in arr
-		o.= sep . v
-	return SubStr(o,StrLen(sep)+1)
-}
-
-ArrayIncludes(arr, v) {
-	static _ := Array.prototype.DefineMethod("includes", Func("ArrayIncludes"))
-	for i, e in arr
-	{
-		if (e == v)
-			return true
-	}
-	return false
-}
-
-ArrayFilter(arr, filter_func) {
-    static _ := Array.prototype.DefineMethod("filter", Func("ArrayFilter"))
-    out := []
-    for i, k in arr
-    {
-        if (filter_func.Call(k))
-            out.push(k)
-    }
-    return out
-}
-
-StringLength(str) {
-	static _ := "".base.length := Func("StringLength")
-	return StrLen(str)
-}

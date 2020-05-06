@@ -2,7 +2,37 @@
 	Contains clipboard processing-related functions
 */
 
+; check the output to see if we want manipulate it.
+cb_postProcess()
+{
+	if (postprocess_sapgui)
+	{
+		cb := clipboard
+		
+		; tcode + screen independent processing
 
+		cb_removeInitialHeader(cb)
+		cb_removeTrailingPage(cb)
+		
+		cb_repairWideTable(cb)
+		
+		; temporarily ignore needs work
+		;cb_repairNewLineInTableCell(cb)
+		
+		
+		; tcode specific processing
+
+		if (ST03.postprocess(cb))
+			goto cb_postProcess_done
+		
+
+		;put the data back into the clipboard
+		cb_postProcess_done:
+		clipboard := cb
+	}
+}
+
+; cb data containing newlines
 cb_removeInitialHeader(byref cb_with_newlines)
 {
 	/*

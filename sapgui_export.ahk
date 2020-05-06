@@ -73,6 +73,7 @@ OnError("flushLogAndExit")
 
 #include lib/MyControl.ahk
 
+#include lib/prototypes.ahk
 #include lib/helpers.ahk
 
 #include lib/cb_main.ahk
@@ -84,29 +85,10 @@ OnError("flushLogAndExit")
 #include lib/tc_os01.ahk
 #include lib/tc_stad.ahk
 #include lib/tc_st12.ahk
+#include lib/tc_st03.ahk
 
 ; excel functionality
 #include lib/excel.ahk
-
-
-sapgui_postProcess()
-{
-	if (postprocess_sapgui)
-	{
-		cb := clipboard
-		
-		cb_removeInitialHeader(cb)
-		cb_removeTrailingPage(cb)
-		
-		cb_repairWideTable(cb)
-		
-		; temporarily ignore needs work
-		;cb_repairNewLineInTableCell(cb)
-		
-		
-		clipboard := cb
-	}
-}
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,7 +114,7 @@ sapgui_postProcess()
 	if InStr(title, "Save list in file...")
 	{
 		waitAndProcessSaveDialog()
-		sapgui_postProcess()
+		cb_postProcess()
 		flushLogAndExit()
 	}
 	
@@ -224,7 +206,7 @@ sapgui_postProcess()
 			{
 				waitForSaveDialogToClose(save_hwnd)
 				
-				sapgui_postProcess()
+				cb_postProcess()
 			}
 		}
 		flushLogAndExit()
