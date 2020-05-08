@@ -244,7 +244,8 @@ st12_insertCallStacksIntoOutput(byref st12_output, call_stacks)
 
 	output := StrSplit(st12_output, "`r`n")
 	call_stacks := StrSplit(call_stacks, "`r`n")
-	cs_width := StrLen(call_stacks[1])
+	;cs_width := StrLen(call_stacks[1])
+	cs_width := call_stacks[1].length
 
 	; 0 = not the table, 1 = table header, 2 = table body
 	cur_table_section := 0
@@ -259,7 +260,8 @@ st12_insertCallStacksIntoOutput(byref st12_output, call_stacks)
 		
 		if (cur_table_section == 1) {
 			if (RegexMatch(line, header_pattern, header_match))
-				cs_start_col := StrLen(header_match.value()) + 1
+				;cs_start_col := StrLen(header_match.value()) + 1
+				cs_start_col := header_match.value().length + 1
 			else {
 				appendLog("Unexpected table header")
 				return false

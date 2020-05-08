@@ -160,7 +160,8 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 			
 			; found a match, make sure it's not an exception
 			if (RegexMatch(num_mo.1, ignore_ip_add)){
-				position += StrLen(num_mo.0)
+				;position += StrLen(num_mo.0)
+				position += num_mo.0.length
 				continue
 			}
 			
@@ -200,7 +201,7 @@ cb_detectNumberFormat(byref cb_with_newlines, byref dec_separator, byref thou_se
 				*/
 			}
 			; advance past the number we found
-			position += StrLen(num_mo.0)
+			position += num_mo.0.length
 		}
 		
 		if (num_count > max_nums){
@@ -261,7 +262,7 @@ cb_repairWideTable(byref cb_with_newlines)
 	cb_with_newlines := RegexReplace(cb_with_newlines, needle, "", cnt)
 	
 	runtime := A_TickCount - start_time
-	appendLog(cnt . " replacements in " . runtime . " ms in cb_repairWideTable")
+	appendLog(cnt . " replacements in " . runtime . " ms")
 
 }  ; cb_repairWideTable
 

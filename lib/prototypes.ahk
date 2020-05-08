@@ -1,4 +1,4 @@
-
+; ===================================== ARRAY
 ; Array prototype modifications
 
 ArrayJoin(arr, sep) {
@@ -38,6 +38,28 @@ ArrayMap(arr, map_func) {
     return out
 }
 
+;other array functions
+
+; assumes all arrays are the same length
+JoinArrays(join_func, arr*){
+
+	out := []
+	if (arr.length == 0)
+		return []
+	
+	for i,e in arr[1]
+	{
+		params := []
+		for j,a in arr
+			params.push(a[i])
+
+		out.push(join_func.Call(params*))
+	}
+	return out
+}
+
+
+; ===================================== STRING
 ; String base modifications
 ; https://lexikos.github.io/v2/docs/Objects.htm#primitive
 
@@ -52,7 +74,7 @@ StringSplit(str, splitter := "`r`n") {
 }
 %DefMethod%( "".base, "split", Func("StringSplit" ))
 
-; other functions
+; other string functions
 
 ; pads each string of an array so all strings are the same length
 StringPad(align := "left", strings*){
@@ -73,20 +95,3 @@ StringPad(align := "left", strings*){
 	return padded_array
 }
 
-; assumes all arrays are the same length
-JoinArrays(join_func, arr*){
-
-	out := []
-	if (arr.length == 0)
-		return []
-	
-	for i,e in arr[1]
-	{
-		params := []
-		for j,a in arr
-			params.push(a[i])
-
-		out.push(join_func.Call(params*))
-	}
-	return out
-}

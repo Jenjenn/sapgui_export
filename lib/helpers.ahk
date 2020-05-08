@@ -35,6 +35,7 @@
 */
 
 Global SUPPORTED_THEMES := ["blue_crystal","signature"]
+Global AVG := "Ø"
 
 ; preload the visual elements of SAPGUI
 Global sapgui_elements := {
@@ -172,18 +173,16 @@ waitAndProcessSaveDialog(timeout := 20)
 		flushLogAndExit()
 	}
 	
-    ; "ControlSend", sadly, doesn't work on the window in this case
-	; appendLog("Clicking 'In the clipboard'")
-    ; preferred method ==> ControlClick("x25 y195", "Save list in file...", , , , "Pos")
-	; on older releases, the spacing is different and clicking in a specific position doesn't work
-	
 	; testing new method: get the classnn of the
 	; radio button control and use controlsend on it
 	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
 	ControlSend("{Up}", rb_control.hwnd)
 
+	; TODO: test yet another method. Once we have rb_control,
+	;       can we use control click by position with a fixed offset from the bottom of rb_control?
+
 	; doesn't always work unless we sleep for a bit
-	Sleep(15)
+	Sleep(20)
 	ControlSend("{Enter}", , win_id)
 
 	return win_id

@@ -1,5 +1,8 @@
 class ST03
 {
+
+    
+
     class Metadata {
         __New()
         {
@@ -49,13 +52,17 @@ class ST03
         if (RegexMatch(cb, "m)^\| .*Period Type *?(?P<period_type>Day|Week|Month) *\|$", mo1))
             cb_meta.period_type := mo1.period_type
 
-        if (RegexMatch(cb, "m)^\| Period *?(?:(?P<dd1>\d\d)\.(?P<mm1>\d\d)\.(?P<yy1>\d\d\d\d)|(?P<mm2>\d\d)/(?P<yy2>\d\d))(?: -\d\d.\d\d.\d\d\d\d)?", mo1))
+        if (RegexMatch(cb, "m)^\| Period *?(?:(?P<dd1>\d\d)\.(?P<mm1>\d\d)\.(?P<yy1>\d\d\d\d)|(?P<mm2>\d\d)/(?P<yy2>\d\d\d\d))(?: -\d\d.\d\d.\d\d\d\d)?", mo1))
             cb_meta.period := mo1.dd1 ? mo1.yy1 "/" mo1.mm1 "/" mo1.dd1 : mo1.yy2 "/" mo1.mm2 "/01"
         else if (RegexMatch(cb, "m)^\| Period *?(?P<period>User-defined).*?\|$", mo1))
             cb_meta.period := mo1.period
 
         if (RegexMatch(cb, "m)^\| .*First record *?(?P<dd>\d\d)\.(?P<mm>\d\d)\.(?P<yy>\d\d\d\d) (?P<ts>\d\d:\d\d:\d\d) *?\|$", mo1))
             cb_meta.first_record := mo1.yy "/" mo1.mm "/" mo1.dd " " mo1.ts
+
+        ; TODO: On the Workload Overview screen, Task Type is already provided per row so 
+        ;       there is no need to add it again, need to check for it in the table headers
+
 
         ; screen determination
         if (cb_meta.period_type)
@@ -104,7 +111,6 @@ class ST03
         ; 4 = in table
         cur_section := 0
         
-
         for i, line in lines
         {
             if (RegexMatch(line, table_border)) {
