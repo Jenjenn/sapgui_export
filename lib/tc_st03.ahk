@@ -52,13 +52,33 @@ class ST03
         if (RegexMatch(cb, "m)^\| .*Period Type *?(?P<period_type>Day|Week|Month) *\|$", mo1))
             cb_meta.period_type := mo1.period_type
 
-        if (RegexMatch(cb, "m)^\| Period *?(?:(?P<dd1>\d\d)\.(?P<mm1>\d\d)\.(?P<yy1>\d\d\d\d)|(?P<mm2>\d\d)/(?P<yy2>\d\d\d\d))(?: -\d\d.\d\d.\d\d\d\d)?", mo1))
-            cb_meta.period := mo1.dd1 ? mo1.yy1 "/" mo1.mm1 "/" mo1.dd1 : mo1.yy2 "/" mo1.mm2 "/01"
+        if (RegexMatch(cb,  "m)^\| Period *?(?:"
+                        .   "(?P<dd1>\d\d)\.(?P<mm1>\d\d)\.(?P<yy1>\d\d\d\d)|"
+                        .   "(?P<mm2>\d\d)/(?P<dd2>\d\d)/(?P<yy2>\d\d\d\d)|"
+                        .   "(?P<mm3>\d\d)/(?P<yy3>\d\d\d\d)"
+                        .   ").+\|$", mo1))
+        {
+            if (mo1.yy1)
+                cb_meta.period := mo1.yy1 "/" mo1.mm1 "/" mo1.dd1
+            else if (mo1.yy2)
+                cb_meta.period := mo1.yy2 "/" mo1.mm2 "/" mo1.dd2
+            else if (mo1.yy3)
+                cb_meta.period := mo1.yy3 "/" mo1.mm3 "/01"
+        }
         else if (RegexMatch(cb, "m)^\| Period *?(?P<period>User-defined).*?\|$", mo1))
             cb_meta.period := mo1.period
 
-        if (RegexMatch(cb, "m)^\| .*First record *?(?P<dd>\d\d)\.(?P<mm>\d\d)\.(?P<yy>\d\d\d\d) (?P<ts>\d\d:\d\d:\d\d) *?\|$", mo1))
-            cb_meta.first_record := mo1.yy "/" mo1.mm "/" mo1.dd " " mo1.ts
+        if (RegexMatch(cb, "m)^\| .*First record *?(?:"
+                        .  "(?P<dd1>\d\d)\.(?P<mm1>\d\d)\.(?P<yy1>\d\d\d\d) (?P<ts1>\d\d:\d\d:\d\d)|"
+                        .  "(?P<mm2>\d\d)/(?P<dd2>\d\d)/(?P<yy2>\d\d\d\d) (?P<ts2>\d\d:\d\d:\d\d)"
+                        .  ") *?\|$", mo1))
+        {
+            if (mo1.yy1)
+                cb_meta.first_record := mo1.yy1 "/" mo1.mm1 "/" mo1.dd1 " " mo1.ts1
+            else if (mo1.yy2)
+                cb_meta.first_record := mo1.yy2 "/" mo1.mm2 "/" mo1.dd2 " " mo1.ts2
+        }
+            
 
         ; TODO: On the Workload Overview screen, Task Type is already provided per row so 
         ;       there is no need to add it again, need to check for it in the table headers
@@ -142,6 +162,9 @@ class ST03
     static format_metadata(cb_meta)
     {
         metadata := []
+
+        if (cb_meta.period == "User-defined")
+            cb_meta.period := SubStr(cb_meta.first_record, 1, 10)
 
         if (cb_meta.screen == "load history"){
             instance := StringPad(,"Instance", cb_meta.instance)

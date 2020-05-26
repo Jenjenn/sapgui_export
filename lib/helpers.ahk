@@ -175,11 +175,18 @@ waitAndProcessSaveDialog(timeout := 20)
 	
 	; testing new method: get the classnn of the
 	; radio button control and use controlsend on it
-	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
-	ControlSend("{Up}", rb_control.hwnd)
+	;rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
+	;ControlSend("{Up}", rb_control.hwnd)
+	; still doesn't always work
 
-	; TODO: test yet another method. Once we have rb_control,
-	;       can we use control click by position with a fixed offset from the bottom of rb_control?
+	; test yet another method. Once we have rb_control,
+	; can we use control click by position with a fixed offset from the bottom of rb_control?
+	rb_control := getControlsByClass(win_id, sapgui_elements.save_list_rb.classnn, true)[1]
+	cx := rb_control.x + 25, cy := rb_control.y + rb_control.h - 15
+	; TODO: sometimes the layout of the "Save list in file..." dialog gets rearranged(?)
+	;       and the "In the clipboard" option ends up higher than it should be
+	; cy := ...
+	ControlClick("x" cx " y" cy, "ahk_id " rb_control.hwnd, , , 2)
 
 	; doesn't always work unless we sleep for a bit
 	Sleep(20)

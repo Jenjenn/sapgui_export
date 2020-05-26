@@ -14,6 +14,8 @@
 	
 */
 
+; TODO generalize findEdge for all directions
+
 
 st12_findEdgeDown(byref pbm, x, y, num_checks, byref y_edge)
 {
@@ -302,7 +304,8 @@ st12_copyABAPTraceScreen(win_id)
 	waitAndProcessSaveDialog()
 	ClipWait(5)
 	st12_out := clipboard
-	
+
+	cb_removeInitialHeader(st12_out)
 
 	if (call_stacks)
 	{

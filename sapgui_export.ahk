@@ -21,7 +21,7 @@
 		HARD - SQL summary Statement details (screen which shows fastest, slowest, average, calling source locations)
 		MEDIUM - SE16 : Do some processing on particular tables
 			(e.g. timestamps which are yyyymmddhhmmss -> yyyy/mm/dd hh:mm:ss)
-		
+		MEDIUM - Use SMON WP aggregation analysis to provide the DBTimeSAP portion of AS<->DB RTT analysis.
 		
 		EVEN POSSIBLE?? Get ahk to work through Remote Desktop connection
 		
@@ -331,17 +331,15 @@ return
 ^q::
 	
 	clearLog()
-	appendLog("Pasting into n++")
+	appendLog("processing in notepad++")
 	
-	;cb := clipboard
+	cb := clipboard
 
-	;appendLog("add column dividers")
-	;STAD.insertColumnDividers(cb)
+	cb_repairWideTable(cb)
 
-	;clipboard := cb
-
-	;MsgBox % "ds = '" . ds . "' ts = '" . ts . "'"
+	clipboard := cb
 	
+	appendLog("done.")
 	flushLogAndExit()
 	
 	return
