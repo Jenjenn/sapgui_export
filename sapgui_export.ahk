@@ -96,7 +96,7 @@ OnError("flushLogAndExit")
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 #If WinActive("ahk_exe saplogon.exe")
-` Up::
+` Up::  ;backtick + wait for release
 
 	winID := WinGetID("A")
 	title := WinGetTitle(winID)
@@ -258,7 +258,7 @@ showGridsAndToolbars()
 }
 
 
-^!z::
+^!z::  ; control + alt + z
 
 KeyWait("Control")
 KeyWait("Alt")
@@ -350,7 +350,7 @@ return
 ; BCP                 ;
 ;;;;;;;;;;;;;;;;;;;;;;;
 #If WinActive("ahk_exe chrome.exe") && ( WinActive("Incident") || WinActive("Chat Incident") || WinActive("Solman Incident") || WinActive("SPC Incident"))
-^q::
+^q::  ; control + q
 	clearLog()
 	appendlog("Pasting into BCP")
 	; paste the clipboard but with non-breaking spaces instead of regular spaces
@@ -361,8 +361,16 @@ return
 	Send("^v")
 
 	; need to wait for Chrome to read from the clipboard before switching it back
-	sleep(50)
+	sleep(100)
 	clipboard := cb
+	flushLogAndExit()
+
+
+#`::  ;Windows key + backtick
+
+	; TODO : a popup that lets you copy templates into the clipboard
+	clearLog()
+	appendLog("hotkey helper")
 	flushLogAndExit()
 
 return

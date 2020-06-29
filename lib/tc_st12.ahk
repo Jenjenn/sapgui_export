@@ -219,7 +219,7 @@ st12_callStackEnabled(win_id)
 	appendLog("checking for a call stack")
 	
 	; Blue Crystal
-	t := getControlByClassNN(win_id, "Button9")
+	t := getControlByClassNN(win_id, "Button7")
 	if ( (t.w = 62 AND t.h = 28)
 	OR (t.w = 76 AND t.h = 35) ) {
 		appendLog("call stack enabled (blue_crystal)")
@@ -293,7 +293,7 @@ st12_copyABAPTraceScreen(win_id)
 		
 		call_stacks := st12_copyCallStack(win_id)
 		
-		if (call_stacks = ""){
+		if (call_stacks == ""){
 			appendLog("no callstacks")
 		}
 	}
@@ -309,10 +309,10 @@ st12_copyABAPTraceScreen(win_id)
 
 	if (call_stacks)
 	{
-		if (st12_insertCallStacksIntoOutput(st12_out, call_stacks))
-			clipboard := st12_out
+		st12_insertCallStacksIntoOutput(st12_out, call_stacks)
 	}
 
+	clipboard := st12_out
 	flushLogAndExit()
 }
 

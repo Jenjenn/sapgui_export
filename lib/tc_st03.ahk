@@ -55,7 +55,8 @@ class ST03
         if (RegexMatch(cb,  "m)^\| Period *?(?:"
                         .   "(?P<dd1>\d\d)\.(?P<mm1>\d\d)\.(?P<yy1>\d\d\d\d)|"
                         .   "(?P<mm2>\d\d)/(?P<dd2>\d\d)/(?P<yy2>\d\d\d\d)|"
-                        .   "(?P<mm3>\d\d)/(?P<yy3>\d\d\d\d)"
+                        .   "(?P<mm3>\d\d)/(?P<yy3>\d\d\d\d)|"
+                        .   "(?P<yy4>\d\d\d\d)[/.](?P<mm4>\d\d)[/.](?P<dd4>\d\d)"
                         .   ").+\|$", mo1))
         {
             if (mo1.yy1)
@@ -64,6 +65,9 @@ class ST03
                 cb_meta.period := mo1.yy2 "/" mo1.mm2 "/" mo1.dd2
             else if (mo1.yy3)
                 cb_meta.period := mo1.yy3 "/" mo1.mm3 "/01"
+            else if (mo1.yy4)
+                cb_meta.period := mo1.yy4 "/" mo1.mm4 "/" mo1.dd4
+            
         }
         else if (RegexMatch(cb, "m)^\| Period *?(?P<period>User-defined).*?\|$", mo1))
             cb_meta.period := mo1.period
