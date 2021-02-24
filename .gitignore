@@ -1,3 +1,6 @@
 log.txt
 /debug*.png
 /bitbucket-repo-avatar.png
+WindowSpy.ahk
+*.exe
+*.lnk
