@@ -258,7 +258,7 @@ locateGuiElement(winID, x1, y1, x2, y2, name)
 	CoordMode("Pixel", "Client")
 	for i, image_handle in sapgui_elements.%name%.%theme_pf%.handles
 	{
-		found := ImageSearch(found_x, found_y, x1, y1, x2, y2, "*50 HBITMAP:*" . image_handle)
+		found := ImageSearch(found_x, found_y, x1, y1, x2, y2, "*80 HBITMAP:*" . image_handle)
 		
 		if (found) {
 			coord.x := found_x, coord.y := found_y
@@ -290,7 +290,7 @@ locateElementWithinControl(pc, name)
 	for i, image_handle in sapgui_elements.%name%.%theme_pf%.handles {
 		found := ImageSearch(found_x, found_y
 			, pc.x, pc.y, end_x, end_y
-			, "*50 HBITMAP:*" . image_handle)
+			, "*80 HBITMAP:*" . image_handle)
 		
 		if (found) {
 			coord.x := found_x, coord.y := found_y
